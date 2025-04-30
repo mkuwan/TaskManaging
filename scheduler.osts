@@ -877,18 +877,6 @@ function isTargetTask(
  * 入力日付もこのスケジュールシートに作成します
  */
 function getScheduleSheet(workbook: ExcelScript.Workbook) {
-  // 入力シートから日付を取得
-  const inputSheet = workbook.getWorksheet("入力");
-  if (!inputSheet) {
-    throw new Error("「入力」シートが見つかりません。シートを作成してB1セルに日付を入力してください。");
-  }
-
-  const inputDateCell = inputSheet.getRange("B1");
-  const inputDateValue = inputDateCell.getValue();
-  if (!inputDateValue) {
-    throw new Error("入力シートのB1セルに日付が入力されていません。");
-  }
-
   // 業務スケジュールシートの準備
   let scheduleSheet = workbook.getWorksheet("業務スケジュール");
   if (!scheduleSheet) {
@@ -1041,6 +1029,7 @@ function main(workbook: ExcelScript.Workbook) {
     return;
   } catch (error) {
     // エラー情報を記録
+
     const errorMessage = String(error);
     const errorType = error instanceof Error ? error.name : "Unknown";
 
