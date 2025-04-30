@@ -13,6 +13,9 @@ __pycache__/
 # 一時ファイル
 ~$*
 
+#
+業務local.xlsx
+
 # Distribution / packaging
 .Python
 build/
