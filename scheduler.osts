@@ -1038,63 +1038,14 @@ function main(workbook: ExcelScript.Workbook) {
     debugLog(workbook, `処理完了: ${matchCount}件の業務を抽出`);
     debugLog(workbook, `抽出業務ID: ${extractedTasks.map(t => t.id).join(', ')}`);
 
-    // メッセージシートの準備
-    let msgSheet = workbook.getWorksheet("メッセージ");
-    if (!msgSheet) {
-      msgSheet = workbook.addWorksheet("メッセージ");
-    }
-
-    // メッセージ表示
-    msgSheet.getRange("A1:B3").setValues([
-      ["処理結果", ""],
-      ["実行日", inputDate],
-      ["抽出業務数", String(matchCount)]
-    ]);
-
-    // フォーマット設定
-    msgSheet.getRange("A1:B1").getFormat().getFill().setColor("#4472C4");
-    msgSheet.getRange("A1:B1").getFormat().getFont().setColor("white");
-    msgSheet.getRange("A1:B1").getFormat().getFont().setBold(true);
-    msgSheet.getRange("A1:B3").getFormat().getFont().setSize(14);
-
-    // 列幅調整
-    msgSheet.getRange("A:A").getFormat().setColumnWidth(120);
-    msgSheet.getRange("B:B").getFormat().setColumnWidth(180);
-
     return;
   } catch (error) {
-    // エラー処理
-    debugLog(workbook, `エラー発生: ${String(error)}`, "error");
-
-    // エラーログシートの準備
-    let errorSheet = workbook.getWorksheet("エラーログ");
-    if (!errorSheet) {
-      errorSheet = workbook.addWorksheet("エラーログ");
-      errorSheet.getRange("A1:C1").setValues([["タイムスタンプ", "エラー種別", "エラーメッセージ"]]);
-    }
-
     // エラー情報を記録
-    const lastRow = errorSheet.getUsedRange()?.getRowCount() || 1;
-    const timestamp = new Date().toLocaleString();
     const errorMessage = String(error);
     const errorType = error instanceof Error ? error.name : "Unknown";
 
-    errorSheet.getRange(`A${lastRow + 1}:C${lastRow + 1}`).setValues([
-      [timestamp, errorType, errorMessage]
-    ]);
+    // エラー処理
+    debugLog(workbook, `エラー発生: ${errorType}: ${String(error)}`, "error");
 
-    // メッセージシートにエラー表示
-    const msgSheet = workbook.getWorksheet("メッセージ") || workbook.addWorksheet("メッセージ");
-
-    msgSheet.getRange("A1:B2").setValues([
-      ["エラーが発生しました", ""],
-      ["詳細", "エラーログシートを確認してください"]
-    ]);
-
-    // エラー表示のフォーマット
-    msgSheet.getRange("A1:B1").getFormat().getFill().setColor("#FF0000");
-    msgSheet.getRange("A1:B1").getFormat().getFont().setColor("white");
-    msgSheet.getRange("A1:B1").getFormat().getFont().setBold(true);
-    msgSheet.getRange("A1:B2").getFormat().getFont().setSize(14);
   }
 }
