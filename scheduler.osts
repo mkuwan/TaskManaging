@@ -1034,7 +1034,7 @@ function main(workbook: ExcelScript.Workbook) {
     const errorType = error instanceof Error ? error.name : "Unknown";
 
     // エラー処理
-    debugLog(workbook, `エラー発生: ${errorType}: ${String(error)}`, "error");
+    debugLog(workbook, `エラー発生: ${String(error)}`, "error");
 
   }
 }
