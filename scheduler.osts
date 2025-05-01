@@ -891,6 +891,7 @@ function isTargetTask(
 /**
  * 業務スケジュールシートの準備
  * 入力日付もこのスケジュールシートに作成します
+ * 既存データがある場合は消去せず、その次の行から追加します
  */
 function getScheduleSheet(workbook: ExcelScript.Workbook) {
   // 業務スケジュールシートの準備
@@ -903,32 +904,76 @@ function getScheduleSheet(workbook: ExcelScript.Workbook) {
     scheduleSheet.getRange("A1:C1").setValues([["日付", formatDateBySlash(new Date), "曜日"]]);
 
     // スケジュールのヘッダー行を設定（新規作成時のみ） 
-    scheduleSheet.getRange("A3:C3").setValues([["スケジュールID", "業務ID", "予定日"]]);
+    scheduleSheet.getRange("A3:I3").setValues([["スケジュールID", "業務ID", "予定日", "作業者", "開始予定時刻", "実開始時刻", "実終了時刻", "ステータス", "メモ"]]);
 
     // フォーマット設定
-    scheduleSheet.getRange("A3:C3").getFormat().getFill().setColor("#4472C4");
-    scheduleSheet.getRange("A3:C3").getFormat().getFont().setColor("white");
-    scheduleSheet.getRange("A3:C3").getFormat().getFont().setBold(true);
+    scheduleSheet.getRange("A3:I3").getFormat().getFill().setColor("#4472C4");
+    scheduleSheet.getRange("A3:I3").getFormat().getFont().setColor("white");
+    scheduleSheet.getRange("A3:I3").getFormat().getFont().setBold(true);
   } else {
+    // ヘッダーが正しく設定されているか確認
     // たまになぜか消えるのでヘッダーは作成するようにしてます
     // スケジュールのヘッダー行を設定 
-    scheduleSheet.getRange("A3:C3").setValues([["スケジュールID", "業務ID", "予定日"]]);
+    scheduleSheet.getRange("A3:I3").setValues([["スケジュールID", "業務ID", "予定日", "作業者", "開始予定時刻", "実開始時刻", "実終了時刻", "ステータス", "メモ"]]);
     // フォーマット設定
-    scheduleSheet.getRange("A3:C3").getFormat().getFill().setColor("#4472C4");
-    scheduleSheet.getRange("A3:C3").getFormat().getFont().setColor("white");
-    scheduleSheet.getRange("A3:C3").getFormat().getFont().setBold(true);
+    scheduleSheet.getRange("A3:I3").getFormat().getFill().setColor("#4472C4");
+    scheduleSheet.getRange("A3:I3").getFormat().getFont().setColor("white");
+    scheduleSheet.getRange("A3:I3").getFormat().getFont().setBold(true);
 
-
-    // 既存のデータをクリア
-    const existingRange = scheduleSheet.getUsedRange();
-    if (existingRange && existingRange.getRowCount() > 1) {
-      // ヘッダー行以外をクリア
-      const dataRange = scheduleSheet.getRange(`A4:C${existingRange.getRowCount()}`);
-      dataRange.clear();
-    }
+    // 既存のデータは消去しない
+    // // 既存のデータをクリア
+    // const existingRange = scheduleSheet.getUsedRange();
+    // if (existingRange && existingRange.getRowCount() > 1) {
+    //   // ヘッダー行以外をクリア
+    //   const dataRange = scheduleSheet.getRange(`A4:C${existingRange.getRowCount()}`);
+    //   dataRange.clear();
+    // }
   }
 
   return scheduleSheet;
+}
+
+/**
+ * 業務スケジュールシートから既存データの最終行と最大のスケジュールIDを取得する関数
+ * @param scheduleSheet - 業務スケジュールシート
+ * @returns { lastRowIndex: number, maxScheduleId: number } - 最終行のインデックスと最大のスケジュールID
+ */
+function getExistingScheduleInfo(scheduleSheet: ExcelScript.Worksheet): { lastRowIndex: number, maxScheduleId: number } {
+  try {
+    // 使用範囲を取得
+    const usedRange = scheduleSheet.getUsedRange();
+    
+    // 使用範囲がない場合や、ヘッダー行だけの場合
+    if (!usedRange || usedRange.getRowCount() <= 3) {
+      return { lastRowIndex: 4, maxScheduleId: 0 }; // ヘッダー行の次から開始
+    }
+    
+    // 使用範囲の行数を取得して最終行インデックスを計算
+    const lastRowIndex = usedRange.getRowCount() + 1; // 次の空行から開始
+    
+    // 最大のスケジュールIDを探す
+    // スケジュールIDは最初の列にあると想定
+    const scheduleIdRange = scheduleSheet.getRange(`A4:A${usedRange.getRowCount()}`);
+    const scheduleIds = scheduleIdRange.getValues();
+    
+    let maxScheduleId = 0;
+    for (let i = 0; i < scheduleIds.length; i++) {
+      const idValue = scheduleIds[i][0];
+      if (idValue && typeof idValue === 'number') {
+        maxScheduleId = Math.max(maxScheduleId, idValue);
+      } else if (idValue && typeof idValue === 'string') {
+        const parsedId = parseInt(idValue as string, 10);
+        if (!isNaN(parsedId)) {
+          maxScheduleId = Math.max(maxScheduleId, parsedId);
+        }
+      }
+    }
+    
+    return { lastRowIndex, maxScheduleId };
+  } catch (e) {
+    // エラーが発生した場合は安全なデフォルト値を返す
+    return { lastRowIndex: 4, maxScheduleId: 0 };
+  }
 }
 
 /**
@@ -1473,7 +1518,7 @@ function outputTestResults(workbook: ExcelScript.Workbook, testResults: TestResu
 /**
  * テストフラグ
  */
-let isTest: boolean = true;
+let isTest: boolean = false;
 
 /**
  * メイン処理: スケジュール生成
@@ -1499,6 +1544,9 @@ function main(workbook: ExcelScript.Workbook) {
     // 通常の業務スケジュール生成モード
     // 業務スケジュールシートの準備
     let scheduleSheet = getScheduleSheet(workbook);
+
+    // 既存データの最終行と最大スケジュールIDを取得
+    const { lastRowIndex, maxScheduleId } = getExistingScheduleInfo(scheduleSheet);
 
     // 入力日付を取得
     const inputDateCell = scheduleSheet.getRange("B1");
@@ -1564,8 +1612,8 @@ function main(workbook: ExcelScript.Workbook) {
     debugLog(workbook, `データ行数: ${taskData.length}`);
 
     // 抽出データの出力開始行
-    const currentRow = 4; // ヘッダー行の次から
-    let scheduleId = 1;   // スケジュールIDは1から開始
+    let currentRow = lastRowIndex; // 既存データの次の行から
+    let scheduleId = maxScheduleId + 1;   // 次のスケジュールID
 
     debugLog(workbook, `出力開始行: ${currentRow}`);
 
