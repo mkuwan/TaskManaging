@@ -134,7 +134,7 @@ function formatDateBySlash(date: Date): string {
  * @param excelDate - Excel形式の日付（文字列、数値、Dateオブジェクト）
  * @returns string - YYYY-MM-DD形式の日付文字列、エラーの場合はエラーメッセージ
  */
-function excelDateToString(excelDate: string | number | Date): string {
+function excelDateToString(excelDate: string | number | Date | boolean): string {
   try {
     let dateObj: Date;
 
@@ -942,20 +942,20 @@ function getExistingScheduleInfo(scheduleSheet: ExcelScript.Worksheet): { lastRo
   try {
     // 使用範囲を取得
     const usedRange = scheduleSheet.getUsedRange();
-    
+
     // 使用範囲がない場合や、ヘッダー行だけの場合
     if (!usedRange || usedRange.getRowCount() <= 3) {
       return { lastRowIndex: 4, maxScheduleId: 0 }; // ヘッダー行の次から開始
     }
-    
+
     // 使用範囲の行数を取得して最終行インデックスを計算
     const lastRowIndex = usedRange.getRowCount() + 1; // 次の空行から開始
-    
+
     // 最大のスケジュールIDを探す
     // スケジュールIDは最初の列にあると想定
     const scheduleIdRange = scheduleSheet.getRange(`A4:A${usedRange.getRowCount()}`);
     const scheduleIds = scheduleIdRange.getValues();
-    
+
     let maxScheduleId = 0;
     for (let i = 0; i < scheduleIds.length; i++) {
       const idValue = scheduleIds[i][0];
@@ -968,7 +968,7 @@ function getExistingScheduleInfo(scheduleSheet: ExcelScript.Worksheet): { lastRo
         }
       }
     }
-    
+
     return { lastRowIndex, maxScheduleId };
   } catch (e) {
     // エラーが発生した場合は安全なデフォルト値を返す
@@ -1610,6 +1610,38 @@ function main(workbook: ExcelScript.Workbook) {
 
     debugLog(workbook, `ヘッダー: ${headers.join(', ')}`);
     debugLog(workbook, `データ行数: ${taskData.length}`);
+
+    // D1セルのメッセージをクリア
+    scheduleSheet.getRange("D1").setValue("");
+
+    // 既存のスケジュールデータをチェックして同日のデータがないか確認
+    const existingRange = scheduleSheet.getUsedRange();
+    if (existingRange && existingRange.getRowCount() > 3) { // ヘッダー行より下にデータがある場合
+      // 予定日（C列）のデータを取得
+      const scheduleDateRange = scheduleSheet.getRange(`C4:C${existingRange.getRowCount()}`);
+      const scheduleDates = scheduleDateRange.getValues();
+
+      // 入力日付と同じ日付が存在するかチェック
+      let hasSameDate = false;
+      for (let i = 0; i < scheduleDates.length; i++) {
+        if (scheduleDates[i][0]) {
+          const existingDateStr = excelDateToString(scheduleDates[i][0]);
+          if (!existingDateStr.startsWith("error:") && existingDateStr === inputDate) {
+            hasSameDate = true;
+            break;
+          }
+        }
+      }
+
+      // 同日のスケジュールが存在する場合
+      if (hasSameDate) {
+        scheduleSheet.getRange("D1").setValue("同日のスケジュールがあります");
+        scheduleSheet.getRange("D1").getFormat().getFont().setColor("#FF0000");
+        scheduleSheet.getRange("D1").getFormat().getFont().setBold(true);
+        debugLog(workbook, `警告: ${inputDate}のスケジュールはすでに作成済みです`, "warning");
+        return; // 処理を中断
+      }
+    }
 
     // 抽出データの出力開始行
     let currentRow = lastRowIndex; // 既存データの次の行から
