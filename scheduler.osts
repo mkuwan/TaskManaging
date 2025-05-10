@@ -27,19 +27,6 @@ type DateInfo = {
   isBusinessDay: boolean; // 営業日かどうか
 };
 
-/**
- * テスト結果を表す型
- */
-type TestResult = {
-  date: string;           // テスト日付
-  dayOfWeek: string;      // 曜日
-  isBusinessDay: boolean; // 営業日かどうか
-  expectedTaskIds: string; // 期待される業務ID（カンマ区切り）
-  actualTaskIds: string;   // 実際の業務ID（カンマ区切り）
-  isMatch: boolean;        // 一致したかどうか
-  testCase: string;        // テストケース名
-};
-
 // ユーティリティ関数
 /**
  * 指定日が営業日かどうかを判定する関数
@@ -143,6 +130,30 @@ function excelDateToString(excelDate: string | number | Date | boolean): string 
       const millisecondsPerDay = 24 * 60 * 60 * 1000;
       dateObj = new Date((excelDate - 25569) * millisecondsPerDay); // 25569は1900/1/1から1970/1/1までの日数
     } else if (typeof excelDate === 'string') {
+      // 日付形式（YYYY-MM-DD または YYYY/MM/DD または M/D/YYYY）の文字列かどうか確認
+      if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(excelDate)) {
+        // 既にYYYY-MM-DD形式の場合は、日付部分を正規化（ゼロパディング）
+        const parts: string[] = excelDate.split('-');
+        const year: string = parts[0];
+        const month: string = parts[1].padStart(2, '0');
+        const day: string = parts[2].padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      } else if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(excelDate)) {
+        // YYYY/MM/DD形式の場合は、YYYY-MM-DD形式に変換して正規化
+        const parts: string[] = excelDate.split('/');
+        const year: string = parts[0];
+        const month: string = parts[1].padStart(2, '0');
+        const day: string = parts[2].padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(excelDate)) {
+        // M/D/YYYY形式の場合は、YYYY-MM-DD形式に変換して正規化
+        const parts: string[] = excelDate.split('/');
+        const month: string = parts[0].padStart(2, '0');
+        const day: string = parts[1].padStart(2, '0');
+        const year: string = parts[2];
+        return `${year}-${month}-${day}`;
+      }
+
       // 文字列がシリアル値の場合とISO日付文字列の場合を考慮
       const parsedNumber = parseInt(excelDate, 10);
       if (!isNaN(parsedNumber)) {
@@ -1204,370 +1215,119 @@ function isTargetDateForFurikae(
 }
 
 
-// ***************************** TEST *****************************
-/**
- * 曜日を文字列に変換する関数
- * @param dayOfWeek - 曜日の数値（0:日, 1:月, ..., 6:土）
- * @returns string - 曜日の文字列
- */
-function getDayOfWeekString(dayOfWeek: number): string {
-  const days = ["日", "月", "火", "水", "木", "金", "土"];
-  return days[dayOfWeek];
-}
-
-/**
- * テストシートの準備と初期化
- * @param workbook - Excelワークブック
- * @returns ExcelScript.Worksheet - テストシート
- */
-function prepareTestSheet(workbook: ExcelScript.Workbook): ExcelScript.Worksheet {
-  // テストシートの準備
-  let testSheet = workbook.getWorksheet("テスト");
-  if (!testSheet) {
-    debugLog(workbook, "テストシートを新規作成");
-    testSheet = workbook.addWorksheet("テスト");
-  }
-
-  // 既存のデータをクリア
-  const existingRange = testSheet.getUsedRange();
-  if (existingRange) {
-    existingRange.clear();
-  }
-
-  // ヘッダー行を設定
-  testSheet.getRange("A1:G1").setValues([["日付", "曜日", "営業日", "期待される業務ID", "実際の業務ID", "結果", "テストケース"]]);
-
-  // フォーマット設定
-  testSheet.getRange("A1:G1").getFormat().getFill().setColor("#4472C4");
-  testSheet.getRange("A1:G1").getFormat().getFont().setColor("white");
-  testSheet.getRange("A1:G1").getFormat().getFont().setBold(true);
-
-  // 列幅の調整
-  testSheet.getRange("A:A").getFormat().setColumnWidth(120);
-  testSheet.getRange("B:B").getFormat().setColumnWidth(60);
-  testSheet.getRange("C:C").getFormat().setColumnWidth(80);
-  testSheet.getRange("D:D").getFormat().setColumnWidth(250);
-  testSheet.getRange("E:E").getFormat().setColumnWidth(250);
-  testSheet.getRange("F:F").getFormat().setColumnWidth(80);
-  testSheet.getRange("G:G").getFormat().setColumnWidth(200);
-
-  return testSheet;
-}
-
-/**
- * テスト計画から期待される業務IDを取得する関数
- * @param testDate - テスト対象日
- * @returns {expectedTaskIds: string, testCase: string} - 期待される業務IDとテストケース名
- */
-function getExpectedTaskIds(testDate: string): { expectedTaskIds: string, testCase: string } {
-  // 日付を Date オブジェクトに変換
-  const dateObj = new Date(testDate);
-  const year = dateObj.getFullYear();
-  const month = dateObj.getMonth() + 1;
-  const day = dateObj.getDate();
-  const formattedDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-
-  // テスト計画に基づく期待値マッピング
-  const testPlan: { [date: string]: { expectedTaskIds: string, testCase: string } } = {
-    // 通常期間テスト（2025-03-24～2025-03-30）
-    "2025-03-24": { expectedTaskIds: "1, 2, 3, 32, 94", testCase: "平日通常テスト" },
-    "2025-03-25": { expectedTaskIds: "1, 2, 4, 18, 28, 37, 99", testCase: "基本機能テスト" },
-    "2025-03-26": { expectedTaskIds: "1, 2, 5, 27, 42, 52", testCase: "基本機能テスト" },
-    "2025-03-27": { expectedTaskIds: "1, 2, 6, 23, 26, 53", testCase: "基本機能テスト" },
-    "2025-03-28": { expectedTaskIds: "1, 2, 7, 22, 25, 54, 89", testCase: "基本機能テスト" },
-    "2025-03-29": { expectedTaskIds: "1, 8, 21", testCase: "休日テスト" },
-    "2025-03-30": { expectedTaskIds: "1, 9, 20", testCase: "休日テスト" },
-
-    // 月末月初期間テスト（2025-04-28～2025-05-04）
-    "2025-04-28": { expectedTaskIds: "1, 2, 3, 21, 25, 32", testCase: "月末営業日テスト" },
-    "2025-04-29": { expectedTaskIds: "1, 4, 20, 38", testCase: "祝日テスト（昭和の日）" },
-    "2025-04-30": { expectedTaskIds: "1, 2, 5, 19, 24, 43, 52, 81", testCase: "月末営業日テスト" },
-    "2025-05-01": { expectedTaskIds: "1, 2, 6, 10, 47, 53, 60", testCase: "月初テスト" },
-    "2025-05-02": { expectedTaskIds: "1, 2, 7, 11, 44, 48, 54", testCase: "基本機能テスト" },
-    "2025-05-03": { expectedTaskIds: "1, 8, 12", testCase: "祝日テスト（憲法記念日）" },
-    "2025-05-04": { expectedTaskIds: "1, 9, 13", testCase: "祝日テスト（みどりの日）" },
-
-    // 連休期間テスト（2025-05-03～2025-05-09）
-    "2025-05-05": { expectedTaskIds: "1, 3, 14, 29", testCase: "祝日テスト（こどもの日）" },
-    "2025-05-06": { expectedTaskIds: "1, 4, 34", testCase: "祝日テスト（振替休日）" },
-    "2025-05-07": { expectedTaskIds: "1, 2, 5, 39, 49, 52", testCase: "祝日後営業日テスト" },
-    "2025-05-08": { expectedTaskIds: "1, 2, 6, 50, 53", testCase: "基本機能テスト" },
-    "2025-05-09": { expectedTaskIds: "1, 2, 7, 51, 54", testCase: "基本機能テスト" },
-
-    // 年末年始期間テスト（2024-12-28～2025-01-04）
-    "2024-12-28": { expectedTaskIds: "1, 8, 22", testCase: "休日テスト" },
-    "2024-12-29": { expectedTaskIds: "1, 9, 21", testCase: "休日テスト" },
-    "2024-12-30": { expectedTaskIds: "1, 2, 3, 20, 25, 33", testCase: "年末営業日テスト" },
-    "2024-12-31": { expectedTaskIds: "1, 2, 4, 19, 24, 38, 52, 75, 82", testCase: "年末最終日テスト" },
-    "2025-01-01": { expectedTaskIds: "1, 5, 10, 39, 52, 56", testCase: "祝日テスト（元日）" },
-    "2025-01-02": { expectedTaskIds: "1, 2, 6, 11, 47, 53, 80", testCase: "年始営業日テスト" },
-    "2025-01-03": { expectedTaskIds: "1, 2, 7, 12, 44, 48, 54", testCase: "基本機能テスト" },
-    "2025-01-04": { expectedTaskIds: "1, 8, 13", testCase: "休日テスト" },
-
-    // 閾値テスト
-    "2024-02-29": { expectedTaskIds: "1, 2, 6, 19, 24, 53, 76", testCase: "閏年テスト" },
-    "2025-01-31": { expectedTaskIds: "1, 2, 7, 19, 24, 46, 54", testCase: "月末テスト（31日）" },
-    "2025-02-28": { expectedTaskIds: "1, 2, 7, 19, 24, 54", testCase: "月末テスト（28日）" },
-    "2025-03-31": { expectedTaskIds: "1, 2, 3, 19, 24, 33, 72, 83, 95", testCase: "第5週テスト" },
-  };
-
-  // テスト計画に該当日付がある場合はそれを返す
-  if (testPlan[formattedDate]) {
-    return testPlan[formattedDate];
-  }
-
-  // 該当がない場合は空文字列を返す
-  return { expectedTaskIds: "", testCase: "未定義のテストケース" };
-}
-
-/**
- * 単一日付のテストを実行する関数
- * @param testDate - テスト対象日（YYYY-MM-DD形式）
- * @param workbook - Excelワークブック
- * @param calendar - カレンダー情報
- * @returns TestResult - テスト結果
- */
-function runSingleTest(testDate: string, workbook: ExcelScript.Workbook, calendar: CalendarInfo): TestResult {
-  debugLog(workbook, `テスト実行: ${testDate}`);
-
-  // 日付情報の取得
-  const dateObj = new Date(testDate);
-  const dayOfWeek = dateObj.getDay();
-  const dayOfWeekStr = getDayOfWeekString(dayOfWeek);
-  const isBusinessDayValue = isBusinessDay(testDate, calendar);
-
-  // 業務スケジュールシートの準備
-  let scheduleSheet = getScheduleSheet(workbook);
-
-  // 実行用の日付をB1セルに設定
-  scheduleSheet.getRange("B1").setValue(testDate);
-
-  // 該当する業務を判定して抽出
-  const taskSheet = workbook.getWorksheet("業務一覧");
-  if (!taskSheet) {
-    throw new Error("「業務一覧」シートが見つかりません。");
-  }
-
-  // テーブルデータの取得
-  let taskData: (string | number | boolean)[][] = [];
-  let headers: string[] = [];
-
-  // テーブルを検索
-  const tables = taskSheet.getTables();
-  if (tables.length > 0) {
-    // テーブルからデータを取得
-    const table = tables[0];
-    try {
-      taskData = table.getRangeBetweenHeaderAndTotal().getValues();
-      headers = table.getHeaderRowRange().getValues()[0].map(v => String(v));
-    } catch (e) {
-      // エラー時はシートから直接取得
-      const range = taskSheet.getUsedRange();
-      const values = range.getValues();
-      headers = values[0].map(v => String(v));
-      taskData = values.slice(1);
-    }
-  } else {
-    // テーブルがない場合はシートから直接取得
-    const range = taskSheet.getUsedRange();
-    const values = range.getValues();
-    headers = values[0].map(v => String(v));
-    taskData = values.slice(1);
-  }
-
-  // 抽出された業務IDのリスト
-  let extractedTaskIds: string[] = [];
-
-  // 該当する業務を判定して抽出
-  for (let i = 0; i < taskData.length; i++) {
-    const row = taskData[i];
-
-    // 業務IDを取得
-    const idIndex = headers.indexOf("業務ID");
-    const id = idIndex >= 0 ? String(row[idIndex] || "") : "未定義";
-
-    // 無効な業務IDはスキップ
-    if (!id || id === "undefined" || id === "null") {
-      continue;
-    }
-
-    // 業務判定
-    if (isTargetTask(testDate, row, headers, calendar, workbook)) {
-      extractedTaskIds.push(id);
-    }
-
-    // 振替対象日かどうか判定
-    if (isTargetDateForFurikae(testDate, row, headers, calendar, workbook)) {
-      extractedTaskIds.push(id);
-    }
-  }
-
-  // 期待される業務IDを取得
-  const { expectedTaskIds, testCase } = getExpectedTaskIds(testDate);
-
-  // 実際の業務IDをソートしてカンマ区切りの文字列に変換
-  const actualTaskIds = extractedTaskIds.sort((a, b) => Number(a) - Number(b)).join(", ");
-
-  // 期待値と実際値が一致しているか確認
-  // スペースを削除して正規化してから比較
-  const normalizedExpected = expectedTaskIds.replace(/\s+/g, "");
-  const normalizedActual = actualTaskIds.replace(/\s+/g, "");
-  const isMatch = normalizedExpected === normalizedActual;
-
-  return {
-    date: testDate,
-    dayOfWeek: dayOfWeekStr,
-    isBusinessDay: isBusinessDayValue,
-    expectedTaskIds: expectedTaskIds,
-    actualTaskIds: actualTaskIds,
-    isMatch: isMatch,
-    testCase: testCase
-  };
-}
-
-/**
- * テスト一括実行関数
- * @param workbook - Excelワークブック
- * @param calendar - カレンダー情報
- * @returns TestResult[] - テスト結果の配列
- */
-function runTestSuite(workbook: ExcelScript.Workbook, calendar: CalendarInfo): TestResult[] {
-  const testResults: TestResult[] = [];
-
-  // テストケースの定義（テスト計画から）
-  const testDates = [
-    // 通常期間テスト（2025-03-24～2025-03-30）
-    "2025-03-24", "2025-03-25", "2025-03-26", "2025-03-27", "2025-03-28", "2025-03-29", "2025-03-30",
-
-    // 月末月初期間テスト（2025-04-28～2025-05-04）
-    "2025-04-28", "2025-04-29", "2025-04-30", "2025-05-01", "2025-05-02", "2025-05-03", "2025-05-04",
-
-    // 連休期間テスト（2025-05-03～2025-05-09）
-    "2025-05-05", "2025-05-06", "2025-05-07", "2025-05-08", "2025-05-09",
-
-    // 年末年始期間テスト（2024-12-28～2025-01-04）
-    "2024-12-28", "2024-12-29", "2024-12-30", "2024-12-31", "2025-01-01", "2025-01-02", "2025-01-03", "2025-01-04",
-
-    // 閾値テスト
-    "2024-02-29", "2025-01-31", "2025-02-28", "2025-03-31"
-  ];
-
-  // 各日付でテスト実行
-  for (const testDate of testDates) {
-    const result = runSingleTest(testDate, workbook, calendar);
-    testResults.push(result);
-  }
-
-  return testResults;
-}
-
-/**
- * テスト結果をシートに出力する関数
- * @param workbook - Excelワークブック
- * @param testResults - テスト結果の配列
- */
-function outputTestResults(workbook: ExcelScript.Workbook, testResults: TestResult[]) {
-  // テストシートの準備
-  const testSheet = prepareTestSheet(workbook);
-
-  // 各テスト結果を出力
-  for (let i = 0; i < testResults.length; i++) {
-    const result = testResults[i];
-    const rowIndex = i + 2; // ヘッダー行の次から開始
-
-    // 結果を出力
-    testSheet.getRange(`A${rowIndex}:G${rowIndex}`).setValues([
-      [
-        result.date,
-        result.dayOfWeek,
-        result.isBusinessDay ? "○" : "×",
-        result.expectedTaskIds,
-        result.actualTaskIds,
-        result.isMatch ? "一致" : "不一致",
-        result.testCase
-      ]
-    ]);
-
-    // 結果によって色を変える
-    if (result.isMatch) {
-      testSheet.getRange(`F${rowIndex}`).getFormat().getFill().setColor("#C6EFCE"); // 緑
-    } else {
-      testSheet.getRange(`F${rowIndex}`).getFormat().getFill().setColor("#FFC7CE"); // 赤
-    }
-  }
-
-  // 結果のサマリーを出力
-  const totalTests = testResults.length;
-  const passedTests = testResults.filter(r => r.isMatch).length;
-  const failedTests = totalTests - passedTests;
-  const passRate = (passedTests / totalTests) * 100;
-
-  const summaryRow = testResults.length + 3;
-  testSheet.getRange(`A${summaryRow}:B${summaryRow}`).setValues([["テスト結果サマリー", ""]]);
-  testSheet.getRange(`A${summaryRow + 1}:B${summaryRow + 1}`).setValues([["総テスト数", totalTests.toString()]]);
-  testSheet.getRange(`A${summaryRow + 2}:B${summaryRow + 2}`).setValues([["成功", passedTests.toString()]]);
-  testSheet.getRange(`A${summaryRow + 3}:B${summaryRow + 3}`).setValues([["失敗", failedTests.toString()]]);
-  testSheet.getRange(`A${summaryRow + 4}:B${summaryRow + 4}`).setValues([["成功率", `${passRate.toFixed(2)}%`]]);
-
-  testSheet.getRange(`A${summaryRow}:B${summaryRow}`).getFormat().getFill().setColor("#4472C4");
-  testSheet.getRange(`A${summaryRow}:B${summaryRow}`).getFormat().getFont().setColor("white");
-  testSheet.getRange(`A${summaryRow}:B${summaryRow}`).getFormat().getFont().setBold(true);
-}
-// ***************************** TEST *****************************
-
-/**
- * テストフラグ
- */
-let isTest: boolean = false;
-
 /**
  * メイン処理: スケジュール生成
  * @param workbook - Excelワークブック
+ * @param targetDate - 処理対象日付（日付文字列または数値のExcelシリアル値、省略可）
  */
-function main(workbook: ExcelScript.Workbook) {
+function main(workbook: ExcelScript.Workbook, targetDate: string = "") {
   try {
     create_debug_sheet(workbook, true);
-    debugLog(workbook, isTest ? "処理開始: テスト実行" : "処理開始: 業務スケジュール生成");
 
     // カレンダー情報の準備
     const calendar = prepareCalendarMap(workbook);
 
-    if (isTest) {
-      // テスト実行モード
-      debugLog(workbook, "テストモードで実行します");
-      const testResults = runTestSuite(workbook, calendar);
-      outputTestResults(workbook, testResults);
-      debugLog(workbook, "テスト実行完了");
-      return;
-    }
-
     // 通常の業務スケジュール生成モード
     // 業務スケジュールシートの準備
-    let scheduleSheet = getScheduleSheet(workbook);
+    let scheduleSheet = getScheduleSheet(workbook);    // 既存データの最終行と最大スケジュールIDを取得
+    const { lastRowIndex, maxScheduleId } = getExistingScheduleInfo(scheduleSheet);    // 入力日付を取得
+    let inputDateValue: string | number;
 
-    // 既存データの最終行と最大スケジュールIDを取得
-    const { lastRowIndex, maxScheduleId } = getExistingScheduleInfo(scheduleSheet);
+    if (targetDate !== "") {
+      // 引数で指定された日付を使用
+      inputDateValue = targetDate;
+      debugLog(workbook, `引数から日付を取得: ${targetDate}`);
 
-    // 入力日付を取得
-    const inputDateCell = scheduleSheet.getRange("B1");
-    const inputDateValue = inputDateCell.getValue();
-    if (!inputDateValue) {
-      throw new Error("B1セルに日付が入力されていません。");
+      if (typeof targetDate === "string") {
+        // 日付形式のチェック（yyyy-MM-dd形式またはyyyy/MM/dd形式かどうか）
+        if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(targetDate)) {
+          // yyyy-MM-dd形式の場合はそのまま使用（数値変換しない）
+          inputDateValue = targetDate;
+          debugLog(workbook, `日付形式の文字列として処理: ${targetDate}`);
+        } else if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(targetDate)) {
+          // yyyy/MM/dd形式の場合はハイフン形式に変換
+          const parts: string[] = targetDate.split('/');
+          const year: string = parts[0];
+          const month: string = parts[1].padStart(2, '0');
+          const day: string = parts[2].padStart(2, '0');
+          inputDateValue = `${year}-${month}-${day}`;
+          debugLog(workbook, `スラッシュ形式の日付を変換: ${targetDate} → ${inputDateValue}`);
+        } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(targetDate)) {
+          // M/D/YYYY形式の場合はYYYY-MM-DD形式に変換
+          const parts: string[] = targetDate.split('/');
+          const month: string = parts[0].padStart(2, '0');
+          const day: string = parts[1].padStart(2, '0');
+          const year: string = parts[2];
+          inputDateValue = `${year}-${month}-${day}`;
+          debugLog(workbook, `M/D/YYYY形式の日付を変換: ${targetDate} → ${inputDateValue}`);
+        } else {
+          // それ以外の場合は数値変換を試みる
+          const numericValue = Number(targetDate);
+          if (!isNaN(numericValue)) {
+            inputDateValue = numericValue;
+            debugLog(workbook, `数値に変換: ${targetDate} → ${numericValue}`);
+          }
+        }
+      }
+
+      // B1セルにも表示
+      scheduleSheet.getRange("B1").setValue(inputDateValue);
+    } else {
+      // B1セルから日付を取得
+      const inputDateCell = scheduleSheet.getRange("B1");
+      const cellValue = inputDateCell.getValue() as string | number;
+      debugLog(workbook, `セルB1から日付を取得: ${cellValue}`);
+
+      if (!cellValue) {
+        throw new Error("B1セルに日付が入力されていません。");
+      }            // 値が数値であることを確認
+      if (typeof cellValue === "number") {
+        inputDateValue = cellValue;
+      } else {
+        // 文字列の場合の処理
+        if (typeof cellValue === "string" && /^\d{4}-\d{1,2}-\d{1,2}$/.test(cellValue)) {
+          // yyyy-MM-dd形式の場合はそのまま使用
+          inputDateValue = cellValue;
+          debugLog(workbook, `日付形式の文字列として処理: ${cellValue}`);
+        } else if (typeof cellValue === "string" && /^\d{4}\/\d{1,2}\/\d{1,2}$/.test(cellValue)) {
+          // yyyy/MM/dd形式の場合はハイフン形式に変換
+          const parts: string[] = cellValue.split('/');
+          const year: string = parts[0];
+          const month: string = parts[1].padStart(2, '0');
+          const day: string = parts[2].padStart(2, '0');
+          inputDateValue = `${year}-${month}-${day}`;
+          debugLog(workbook, `スラッシュ形式の日付を変換: ${cellValue} → ${inputDateValue}`);
+        } else if (typeof cellValue === "string" && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(cellValue)) {
+          // M/D/YYYY形式の場合はYYYY-MM-DD形式に変換
+          const parts: string[] = cellValue.split('/');
+          const month: string = parts[0].padStart(2, '0');
+          const day: string = parts[1].padStart(2, '0');
+          const year: string = parts[2];
+          inputDateValue = `${year}-${month}-${day}`;
+          debugLog(workbook, `M/D/YYYY形式の日付を変換: ${cellValue} → ${inputDateValue}`);
+        } else {
+          // その他の文字列はそのまま使用
+          inputDateValue = cellValue;
+        }
+      }
     }
 
     // 日付変換
     let inputDate: string;
-    if (typeof inputDateValue === 'string' || typeof inputDateValue === 'number') {
+    try {
       inputDate = excelDateToString(inputDateValue);
-    } else {
-      throw new Error(`日付の型が不正です: ${typeof inputDateValue}`);
+
+      if (inputDate.startsWith("error:")) {
+        throw new Error(`日付変換エラー: ${inputDate}`);
+      }
+      debugLog(workbook, `日付変換後: ${inputDate}`);
+    } catch (e) {
+      debugLog(workbook, `日付変換エラー: ${e}`, "error");
+      throw new Error(`日付の変換に失敗しました: ${String(e)}`);
     }
 
-    if (inputDate.startsWith("error:")) {
-      throw new Error(`日付変換エラー: ${inputDate}`);
-    }
-
-    debugLog(workbook, `入力日付: ${inputDate}`);
+    // D1セルのメッセージをクリア
+    scheduleSheet.getRange("D1").setValue("");
 
     // 業務一覧テーブルの取得
     const taskSheet = workbook.getWorksheet("業務一覧");
@@ -1700,11 +1460,8 @@ function main(workbook: ExcelScript.Workbook) {
     return;
   } catch (error) {
     // エラー情報を記録
-
     const errorMessage = String(error);
-    const errorType = error instanceof Error ? error.name : "Unknown";
-
-    // エラー処理
+    const errorType = error instanceof Error ? error.name : "Unknown";    // エラー処理
     debugLog(workbook, `エラー発生: ${String(error)}`, "error");
   }
 }
