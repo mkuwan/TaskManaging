@@ -1215,12 +1215,15 @@ function isTargetDateForFurikae(
 }
 
 
+
 /**
  * メイン処理: スケジュール生成
  * @param workbook - Excelワークブック
  * @param targetDate - 処理対象日付（日付文字列または数値のExcelシリアル値、省略可）
+ * @param businessIds - 業務IDのカンマ区切りリスト（テスト用）
+ * @returns string - 抽出された業務IDのカンマ区切りリスト、またはエラーメッセージ
  */
-function main(workbook: ExcelScript.Workbook, targetDate: string = "") {
+function main(workbook: ExcelScript.Workbook, targetDate: string = "", businessIds: string = "", isTest: boolean = false): string {
   try {
     create_debug_sheet(workbook, true);
 
@@ -1368,6 +1371,39 @@ function main(workbook: ExcelScript.Workbook, targetDate: string = "") {
       taskData = values.slice(1);
     }
 
+    // 業務IDが指定されている場合、該当するデータのみを抽出　(主にテストで使用する想定です)
+    if (businessIds && businessIds !== "") {
+      debugLog(workbook, `指定された業務ID: ${businessIds}`);
+
+      // 既存のデータをクリア(テストで使用するため)
+      if (isTest) {
+        const scheduleSheet = workbook.getWorksheet("業務スケジュール");
+        const existingRange = scheduleSheet.getUsedRange();
+        if (taskSheet && existingRange.getRowCount() > 1) {
+          // ヘッダー行以外をクリア
+          const dataRange = scheduleSheet.getRange(`A4:I${existingRange.getRowCount()}`);
+          dataRange.clear();
+        }
+      }
+
+      // 業務IDに対応するカラムのインデックスを取得
+      const businessIdColumnIndex = headers.indexOf("業務ID");
+
+      if (businessIdColumnIndex >= 0) {
+        // フィルタリング：指定された業務IDに一致する業務のみを残す
+        const idList = businessIds.split(',').map(id => id.trim());
+
+        taskData = taskData.filter(row => {
+          const businessId = String(row[businessIdColumnIndex] || "");
+          return idList.includes(businessId);
+        });
+
+        debugLog(workbook, `フィルター適用後のデータ行数: ${taskData.length}`);
+      } else {
+        debugLog(workbook, "業務IDの列が見つかりません", "warning");
+      }
+    }
+
     debugLog(workbook, `ヘッダー: ${headers.join(', ')}`);
     debugLog(workbook, `データ行数: ${taskData.length}`);
 
@@ -1399,7 +1435,7 @@ function main(workbook: ExcelScript.Workbook, targetDate: string = "") {
         scheduleSheet.getRange("D1").getFormat().getFont().setColor("#FF0000");
         scheduleSheet.getRange("D1").getFormat().getFont().setBold(true);
         debugLog(workbook, `警告: ${inputDate}のスケジュールはすでに作成済みです`, "warning");
-        return; // 処理を中断
+        return `警告: ${inputDate}のスケジュールはすでに作成済みです`;
       }
     }
 
@@ -1451,17 +1487,17 @@ function main(workbook: ExcelScript.Workbook, targetDate: string = "") {
 
         scheduleId++;
       }
-    }
-
-    // 処理結果メッセージ
+    }    // 処理結果メッセージ
     debugLog(workbook, `処理完了: ${matchCount}件の業務を抽出`);
     debugLog(workbook, `抽出業務ID: ${extractedTasks.map(t => t.id).join(', ')}`);
 
-    return;
+    // 抽出された業務IDのリストを返す
+    return extractedTasks.map(t => t.id).join(',');
   } catch (error) {
     // エラー情報を記録
     const errorMessage = String(error);
     const errorType = error instanceof Error ? error.name : "Unknown";    // エラー処理
     debugLog(workbook, `エラー発生: ${String(error)}`, "error");
+    return `エラー: ${String(error)}`;
   }
 }
