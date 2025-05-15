@@ -753,10 +753,10 @@ gantt
 
 ```mermaid
 sequenceDiagram
-    participant A as 元の対象日（非営業日）
-    participant B as 直前営業日
-    A->>B: 振替
-    Note over B: 業務実行
+    participant A as 直前営業日
+    participant B as 元の対象日（非営業日）
+    B->>A: 振替
+    Note over A: 業務実行
 ```
 
 #### 例：

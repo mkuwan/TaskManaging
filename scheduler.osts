@@ -11,20 +11,20 @@ type CalendarInfo = { [date: string]: boolean };
  * 営業日情報を表す型
  */
 type BusinessDayInfo = {
-  nth: number;      // 月内での営業日番号（1始まり）
-  total: number;    // 月内の営業日総数
-  reverse: number;  // 月末から数えた営業日番号（最終営業日=0）
+    nth: number;      // 月内での営業日番号（1始まり）
+    total: number;    // 月内の営業日総数
+    reverse: number;  // 月末から数えた営業日番号（最終営業日=0）
 };
 
 /**
  * 日付情報を表す型
  */
 type DateInfo = {
-  year: number;     // 年
-  month: number;    // 月（1-12）
-  day: number;      // 日
-  dayOfWeek: number; // 曜日（0:日, 1:月, ..., 6:土）
-  isBusinessDay: boolean; // 営業日かどうか
+    year: number;     // 年
+    month: number;    // 月（1-12）
+    day: number;      // 日
+    dayOfWeek: number; // 曜日（0:日, 1:月, ..., 6:土）
+    isBusinessDay: boolean; // 営業日かどうか
 };
 
 // ユーティリティ関数
@@ -35,8 +35,8 @@ type DateInfo = {
  * @returns boolean - 営業日の場合true、それ以外はfalse
  */
 function isBusinessDay(inputDate: string, calendar: CalendarInfo): boolean {
-  if (!inputDate || !calendar) return false;
-  return calendar[inputDate] === true;
+    if (!inputDate || !calendar) return false;
+    return calendar[inputDate] === true;
 }
 
 /**
@@ -46,14 +46,14 @@ function isBusinessDay(inputDate: string, calendar: CalendarInfo): boolean {
  * @returns DateInfo - 日付情報
  */
 function getDateInfo(dateStr: string, calendar: CalendarInfo): DateInfo {
-  const date = new Date(dateStr);
-  return {
-    year: date.getFullYear(),
-    month: date.getMonth() + 1,
-    day: date.getDate(),
-    dayOfWeek: date.getDay(),
-    isBusinessDay: isBusinessDay(dateStr, calendar)
-  };
+    const date = new Date(dateStr);
+    return {
+        year: date.getFullYear(),
+        month: date.getMonth() + 1,
+        day: date.getDate(),
+        dayOfWeek: date.getDay(),
+        isBusinessDay: isBusinessDay(dateStr, calendar)
+    };
 }
 
 /**
@@ -63,23 +63,26 @@ function getDateInfo(dateStr: string, calendar: CalendarInfo): DateInfo {
  * @returns BusinessDayInfo - 営業日情報
  */
 function getBusinessDayInfo(inputDate: string, calendar: CalendarInfo): BusinessDayInfo {
-  // inputDateの年月を取得
-  const dateObj = new Date(inputDate);
-  const y = dateObj.getFullYear();
-  const m = dateObj.getMonth() + 1;
+    // inputDateの年月を取得
+    const dateObj = new Date(inputDate);
+    const y = dateObj.getFullYear();
+    const m = dateObj.getMonth() + 1;
 
-  // その月の営業日リストを取得
-  const monthStr = y + "-" + (m < 10 ? "0" : "") + m;
-  const businessDays = Object.keys(calendar)
-    .filter(d => d.startsWith(monthStr) && calendar[d]) // 当月かつ営業日のものをフィルタリング
-    .sort(); // 日付順にソート
+    // その月の営業日リストを取得
+    const monthStr = y + "-" + (m < 10 ? "0" : "") + m;
+    const businessDays = Object.keys(calendar)
+        .filter(d => d.startsWith(monthStr) && calendar[d] === true) // 当月かつ営業日のものをフィルタリング
+        .sort(); // 日付順にソート
 
-  // 月内営業日番号と月末からの逆算番号を計算
-  const nth = businessDays.indexOf(inputDate) + 1; // 0から始まるインデックスを1から始まる番号に変換
-  const total = businessDays.length;
-  const reverse = total - nth; // 最終営業日=0になるように逆算
+    // 入力日付が営業日リストの何番目かを探す
+    const index = businessDays.indexOf(inputDate);
 
-  return { nth, total, reverse };
+    // 月内営業日番号と月末からの逆算番号を計算
+    const nth = index !== -1 ? index + 1 : 0; // 0から始まるインデックスを1から始まる番号に変換、見つからない場合は0
+    const total = businessDays.length;
+    const reverse = nth > 0 ? total - nth : -1; // 最終営業日=0になるように逆算、見つからない場合は-1
+
+    return { nth, total, reverse };
 }
 
 /**
@@ -89,7 +92,7 @@ function getBusinessDayInfo(inputDate: string, calendar: CalendarInfo): Business
  * @returns number - その月の末日
  */
 function getLastDayOfMonth(year: number, month: number): number {
-  return new Date(year, month, 0).getDate();
+    return new Date(year, month, 0).getDate();
 }
 
 /**
@@ -98,10 +101,10 @@ function getLastDayOfMonth(year: number, month: number): number {
  * @returns string - YYYY-MM-DD形式の日付文字列
  */
 function formatDate(date: Date): string {
-  const y = date.getFullYear();
-  const m = date.getMonth() + 1;
-  const d = date.getDate();
-  return `${y}-${m < 10 ? '0' + m : m}-${d < 10 ? '0' + d : d}`;
+    const y = date.getFullYear();
+    const m = date.getMonth() + 1;
+    const d = date.getDate();
+    return `${y}-${m < 10 ? '0' + m : m}-${d < 10 ? '0' + d : d}`;
 }
 
 /**
@@ -110,10 +113,10 @@ function formatDate(date: Date): string {
  * @returns string - YYYY/MM/DD形式の日付文字列
  */
 function formatDateBySlash(date: Date): string {
-  const y = date.getFullYear();
-  const m = date.getMonth() + 1;
-  const d = date.getDate();
-  return `${y}/${m < 10 ? '0' + m : m}/${d < 10 ? '0' + d : d}`;
+    const y = date.getFullYear();
+    const m = date.getMonth() + 1;
+    const d = date.getDate();
+    return `${y}/${m < 10 ? '0' + m : m}/${d < 10 ? '0' + d : d}`;
 }
 
 /**
@@ -122,61 +125,61 @@ function formatDateBySlash(date: Date): string {
  * @returns string - YYYY-MM-DD形式の日付文字列、エラーの場合はエラーメッセージ
  */
 function excelDateToString(excelDate: string | number | Date | boolean): string {
-  try {
-    let dateObj: Date;
+    try {
+        let dateObj: Date;
 
-    if (typeof excelDate === 'number') {
-      // エクセルのシリアル値をJavaScriptのDateに変換
-      const millisecondsPerDay = 24 * 60 * 60 * 1000;
-      dateObj = new Date((excelDate - 25569) * millisecondsPerDay); // 25569は1900/1/1から1970/1/1までの日数
-    } else if (typeof excelDate === 'string') {
-      // 日付形式（YYYY-MM-DD または YYYY/MM/DD または M/D/YYYY）の文字列かどうか確認
-      if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(excelDate)) {
-        // 既にYYYY-MM-DD形式の場合は、日付部分を正規化（ゼロパディング）
-        const parts: string[] = excelDate.split('-');
-        const year: string = parts[0];
-        const month: string = parts[1].padStart(2, '0');
-        const day: string = parts[2].padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      } else if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(excelDate)) {
-        // YYYY/MM/DD形式の場合は、YYYY-MM-DD形式に変換して正規化
-        const parts: string[] = excelDate.split('/');
-        const year: string = parts[0];
-        const month: string = parts[1].padStart(2, '0');
-        const day: string = parts[2].padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(excelDate)) {
-        // M/D/YYYY形式の場合は、YYYY-MM-DD形式に変換して正規化
-        const parts: string[] = excelDate.split('/');
-        const month: string = parts[0].padStart(2, '0');
-        const day: string = parts[1].padStart(2, '0');
-        const year: string = parts[2];
-        return `${year}-${month}-${day}`;
-      }
+        if (typeof excelDate === 'number') {
+            // エクセルのシリアル値をJavaScriptのDateに変換
+            const millisecondsPerDay = 24 * 60 * 60 * 1000;
+            dateObj = new Date((excelDate - 25569) * millisecondsPerDay); // 25569は1900/1/1から1970/1/1までの日数
+        } else if (typeof excelDate === 'string') {
+            // 日付形式（YYYY-MM-DD または YYYY/MM/DD または M/D/YYYY）の文字列かどうか確認
+            if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(excelDate)) {
+                // 既にYYYY-MM-DD形式の場合は、日付部分を正規化（ゼロパディング）
+                const parts: string[] = excelDate.split('-');
+                const year: string = parts[0];
+                const month: string = parts[1].padStart(2, '0');
+                const day: string = parts[2].padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            } else if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(excelDate)) {
+                // YYYY/MM/DD形式の場合は、YYYY-MM-DD形式に変換して正規化
+                const parts: string[] = excelDate.split('/');
+                const year: string = parts[0];
+                const month: string = parts[1].padStart(2, '0');
+                const day: string = parts[2].padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(excelDate)) {
+                // M/D/YYYY形式の場合は、YYYY-MM-DD形式に変換して正規化
+                const parts: string[] = excelDate.split('/');
+                const month: string = parts[0].padStart(2, '0');
+                const day: string = parts[1].padStart(2, '0');
+                const year: string = parts[2];
+                return `${year}-${month}-${day}`;
+            }
 
-      // 文字列がシリアル値の場合とISO日付文字列の場合を考慮
-      const parsedNumber = parseInt(excelDate, 10);
-      if (!isNaN(parsedNumber)) {
-        const millisecondsPerDay = 24 * 60 * 60 * 1000;
-        dateObj = new Date((parsedNumber - 25569) * millisecondsPerDay);
-      } else {
-        dateObj = new Date(excelDate); // ISO日付文字列として解析
-      }
-    } else if (excelDate instanceof Date) {
-      dateObj = excelDate;
-    } else {
-      throw new Error("不明な日付形式");
+            // 文字列がシリアル値の場合とISO日付文字列の場合を考慮
+            const parsedNumber = parseInt(excelDate, 10);
+            if (!isNaN(parsedNumber)) {
+                const millisecondsPerDay = 24 * 60 * 60 * 1000;
+                dateObj = new Date((parsedNumber - 25569) * millisecondsPerDay);
+            } else {
+                dateObj = new Date(excelDate); // ISO日付文字列として解析
+            }
+        } else if (excelDate instanceof Date) {
+            dateObj = excelDate;
+        } else {
+            throw new Error("不明な日付形式");
+        }
+
+        // 無効な日付の場合
+        if (isNaN(dateObj.getTime())) {
+            throw new Error("無効な日付");
+        }
+
+        return formatDate(dateObj);
+    } catch (e) {
+        return `error:${String(e)}`;
     }
-
-    // 無効な日付の場合
-    if (isNaN(dateObj.getTime())) {
-      throw new Error("無効な日付");
-    }
-
-    return formatDate(dateObj);
-  } catch (e) {
-    return `error:${String(e)}`;
-  }
 }
 
 /**
@@ -188,24 +191,24 @@ function excelDateToString(excelDate: string | number | Date | boolean): string 
  * @returns number - 日付（該当しない場合は0）
  */
 function getNthDayOfWeekInMonth(year: number, month: number, dayOfWeek: number, occurance: number): number {
-  if (dayOfWeek < 0 || dayOfWeek > 6 || occurance < 1 || occurance > 5) return 0;
+    if (dayOfWeek < 0 || dayOfWeek > 6 || occurance < 1 || occurance > 5) return 0;
 
-  // 月の最初の日の曜日を取得
-  const firstDay = new Date(year, month - 1, 1);
-  const firstDayOfWeek = firstDay.getDay();
+    // 月の最初の日の曜日を取得
+    const firstDay = new Date(year, month - 1, 1);
+    const firstDayOfWeek = firstDay.getDay();
 
-  // 最初の指定曜日の日付を計算
-  let firstOccurance = 1 + (dayOfWeek - firstDayOfWeek + 7) % 7;
+    // 最初の指定曜日の日付を計算
+    let firstOccurance = 1 + (dayOfWeek - firstDayOfWeek + 7) % 7;
 
-  // 何番目かに応じて日付を計算
-  const day = firstOccurance + (occurance - 1) * 7;
+    // 何番目かに応じて日付を計算
+    const day = firstOccurance + (occurance - 1) * 7;
 
-  // 月末を超えないか確認
-  if (day > getLastDayOfMonth(year, month)) {
-    return 0; // 該当する日付がない場合は0を返す
-  }
+    // 月末を超えないか確認
+    if (day > getLastDayOfMonth(year, month)) {
+        return 0; // 該当する日付がない場合は0を返す
+    }
 
-  return day;
+    return day;
 }
 
 /**
@@ -218,39 +221,39 @@ function getNthDayOfWeekInMonth(year: number, month: number, dayOfWeek: number, 
  * @returns string - n営業日目の日付（YYYY-MM-DD形式）
  */
 function getNthBusinessDayOfMonth(year: number, month: number, n: number, calendar: CalendarInfo, workbook: ExcelScript.Workbook): string {
-  try {
-    if (n <= 0) return "";
+    try {
+        if (n <= 0) return "";
 
-    // 月の初日と末日
-    const firstDay = new Date(year, month - 1, 1);
-    const lastDay = new Date(year, month, 0);
+        // 月の初日と末日
+        const firstDay = new Date(year, month - 1, 1);
+        const lastDay = new Date(year, month, 0);
 
-    let businessDayCount = 0;
-    const currentDate = new Date(firstDay);
+        let businessDayCount = 0;
+        const currentDate = new Date(firstDay);
 
-    // 月内を順に検索
-    while (currentDate <= lastDay) {
-      const dateStr = formatDate(currentDate);
+        // 月内を順に検索
+        while (currentDate <= lastDay) {
+            const dateStr = formatDate(currentDate);
 
-      // 営業日であれば加算
-      if (calendar[dateStr] === true) {
-        businessDayCount++;
+            // 営業日であれば加算
+            if (calendar[dateStr] === true) {
+                businessDayCount++;
 
-        // 目的のn営業日に到達したら
-        if (businessDayCount === n) {
-          return dateStr;
+                // 目的のn営業日に到達したら
+                if (businessDayCount === n) {
+                    return dateStr;
+                }
+            }
+
+            // 次の日へ
+            currentDate.setDate(currentDate.getDate() + 1);
         }
-      }
 
-      // 次の日へ
-      currentDate.setDate(currentDate.getDate() + 1);
+        return "";
+    } catch (e) {
+        debugLog(workbook, `第n営業日計算エラー: ${String(e)}`, "error");
+        return "";
     }
-
-    return "";
-  } catch (e) {
-    debugLog(workbook, `第n営業日計算エラー: ${String(e)}`, "error");
-    return "";
-  }
 }
 
 /**
@@ -263,38 +266,38 @@ function getNthBusinessDayOfMonth(year: number, month: number, n: number, calend
  * @returns string - 月末からn営業日前の日付（YYYY-MM-DD形式）
  */
 function getReverseNthBusinessDayOfMonth(year: number, month: number, n: number, calendar: CalendarInfo, workbook: ExcelScript.Workbook): string {
-  try {
-    if (n < 0) return "";
+    try {
+        if (n < 0) return "";
 
-    // 月の初日と末日
-    const firstDay = new Date(year, month - 1, 1);
-    const lastDay = new Date(year, month, 0);
+        // 月の初日と末日
+        const firstDay = new Date(year, month - 1, 1);
+        const lastDay = new Date(year, month, 0);
 
-    let businessDayCount = 0;
-    const currentDate = new Date(lastDay);
+        let businessDayCount = 0;
+        const currentDate = new Date(lastDay);
 
-    // 月内を逆順に検索
-    while (currentDate >= firstDay) {
-      const dateStr = formatDate(currentDate);
+        // 月内を逆順に検索
+        while (currentDate >= firstDay) {
+            const dateStr = formatDate(currentDate);
 
-      // 営業日であれば加算
-      if (calendar[dateStr] === true) {
-        // 目的のn営業日に到達したら
-        if (businessDayCount === n) {
-          return dateStr;
+            // 営業日であれば加算
+            if (calendar[dateStr] === true) {
+                // 目的のn営業日に到達したら
+                if (businessDayCount === n) {
+                    return dateStr;
+                }
+                businessDayCount++;
+            }
+
+            // 前の日へ
+            currentDate.setDate(currentDate.getDate() - 1);
         }
-        businessDayCount++;
-      }
 
-      // 前の日へ
-      currentDate.setDate(currentDate.getDate() - 1);
+        return "";
+    } catch (e) {
+        debugLog(workbook, `月末からn営業日計算エラー: ${String(e)}`, "error");
+        return "";
     }
-
-    return "";
-  } catch (e) {
-    debugLog(workbook, `月末からn営業日計算エラー: ${String(e)}`, "error");
-    return "";
-  }
 }
 
 /**
@@ -306,46 +309,46 @@ function getReverseNthBusinessDayOfMonth(year: number, month: number, n: number,
  * @returns string - 振替後の日付（YYYY-MM-DD形式）
  */
 function applyFurikaeRule(inputDate: string, rule: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): string {
-  // 既に営業日の場合や振替しない場合は元の日付
-  if (isBusinessDay(inputDate, calendar) || !rule || rule === "振替しない") {
+    // 既に営業日の場合や振替しない場合は元の日付
+    if (isBusinessDay(inputDate, calendar) || !rule || rule === "振替しない") {
+        return inputDate;
+    }
+
+    // 直前営業日
+    if (rule === "直前営業日") {
+        const prevBusinessDay = getPreviousBusinessDay(inputDate, calendar, workbook);
+        return prevBusinessDay || inputDate;
+    }
+
+    // 直後営業日
+    if (rule === "直後営業日") {
+        const nextBusinessDay = getNextBusinessDay(inputDate, calendar, workbook);
+        return nextBusinessDay || inputDate;
+    }
+
+    // その他の場合は元の日付
     return inputDate;
-  }
-
-  // 直前営業日
-  if (rule === "直前営業日") {
-    const prevBusinessDay = getPreviousBusinessDay(inputDate, calendar, workbook);
-    return prevBusinessDay || inputDate;
-  }
-
-  // 直後営業日
-  if (rule === "直後営業日") {
-    const nextBusinessDay = getNextBusinessDay(inputDate, calendar, workbook);
-    return nextBusinessDay || inputDate;
-  }
-
-  // その他の場合は元の日付
-  return inputDate;
 }
 
 /**
  * デバッグログを記録するシートを作成する
  */
 function create_debug_sheet(workbook: ExcelScript.Workbook, isClear = false) {
-  let debugSheet = workbook.getWorksheet("デバッグログ");
-  if (!debugSheet) {
-    debugSheet = workbook.addWorksheet("デバッグログ");
-    debugSheet.getRange("A1:C1").setValues([["タイムスタンプ", "レベル", "ログメッセージ"]]);
-  }
-
-  if (isClear) {
-    // 既存のデータをクリア
-    const existingRange = debugSheet.getUsedRange();
-    if (existingRange && existingRange.getRowCount() > 1) {
-      // ヘッダー行以外をクリア
-      const dataRange = debugSheet.getRange(`A2:C${existingRange.getRowCount()}`);
-      dataRange.clear();
+    let debugSheet = workbook.getWorksheet("デバッグログ");
+    if (!debugSheet) {
+        debugSheet = workbook.addWorksheet("デバッグログ");
+        debugSheet.getRange("A1:C1").setValues([["タイムスタンプ", "レベル", "ログメッセージ"]]);
     }
-  }
+
+    if (isClear) {
+        // 既存のデータをクリア
+        const existingRange = debugSheet.getUsedRange();
+        if (existingRange && existingRange.getRowCount() > 1) {
+            // ヘッダー行以外をクリア
+            const dataRange = debugSheet.getRange(`A2:C${existingRange.getRowCount()}`);
+            dataRange.clear();
+        }
+    }
 }
 
 /**
@@ -355,16 +358,16 @@ function create_debug_sheet(workbook: ExcelScript.Workbook, isClear = false) {
  * @param level - ログレベル（"info", "warning", "error"のいずれか）
  */
 function debugLog(workbook: ExcelScript.Workbook, message: string, level: "info" | "warning" | "error" = "info"): void {
-  // デバッグシートを準備
-  let debugSheet = workbook.getWorksheet("デバッグログ");
-  if (!debugSheet) {
-    create_debug_sheet(workbook, false);
-  }
+    // デバッグシートを準備
+    let debugSheet = workbook.getWorksheet("デバッグログ");
+    if (!debugSheet) {
+        create_debug_sheet(workbook, false);
+    }
 
-  // 最終行を取得してログを追加
-  const lastRow = debugSheet.getUsedRange()?.getRowCount() || 1;
-  const timestamp = new Date().toLocaleTimeString();
-  debugSheet.getRange(`A${lastRow + 1}:C${lastRow + 1}`).setValues([[timestamp, level, message]]);
+    // 最終行を取得してログを追加
+    const lastRow = debugSheet.getUsedRange()?.getRowCount() || 1;
+    const timestamp = new Date().toLocaleTimeString();
+    debugSheet.getRange(`A${lastRow + 1}:C${lastRow + 1}`).setValues([[timestamp, level, message]]);
 }
 
 /**
@@ -373,56 +376,128 @@ function debugLog(workbook: ExcelScript.Workbook, message: string, level: "info"
  * @returns CalendarInfo - 日付をキー、営業日フラグを値とするマップ
  */
 function prepareCalendarMap(workbook: ExcelScript.Workbook): CalendarInfo {
-  // カレンダーシートを取得
-  const calSheet = workbook.getWorksheet("カレンダー");
-  if (!calSheet) {
-    throw new Error("カレンダーシートが見つかりません。");
-  }
-
-  // カレンダーデータを取得
-  const calRange = calSheet.getUsedRange();
-  if (!calRange) {
-    throw new Error("カレンダーシートにデータがありません。");
-  }
-
-  // カレンダーデータの配列を取得
-  const calValues = calRange.getValues();
-  const calMap: CalendarInfo = {};
-
-  debugLog(workbook, `カレンダーデータ行数: ${calValues.length}`);
-
-  try {
-    // ヘッダー行をスキップして2行目からデータを処理
-    for (let i = 1; i < calValues.length; i++) {
-      // 日付データがない行はスキップ
-      if (!calValues[i][0]) continue;
-
-      // 日付文字列に変換（明示的に型変換を行う）
-      let dateValue: string | number | boolean | Date = calValues[i][0];
-      let convertedValue: string | number | Date;
-
-      if (typeof dateValue === 'boolean') {
-        // booleanの場合は文字列に変換
-        convertedValue = String(dateValue);
-      } else {
-        convertedValue = dateValue as string | number | Date;
-      }
-
-      let dateStr: string = excelDateToString(convertedValue);
-      if (dateStr.startsWith("error:")) continue;
-
-      // 営業日フラグを取得（TRUE/true/1を営業日とみなす）
-      const isBusinessDay = calValues[i][1] === true ||
-        calValues[i][1] === "TRUE" ||
-        calValues[i][1] === 1;
-      calMap[dateStr] = isBusinessDay;
+    // カレンダーシートを取得
+    const calSheet = workbook.getWorksheet("カレンダー");
+    if (!calSheet) {
+        throw new Error("カレンダーシートが見つかりません。");
     }
-  } catch (e) {
-    debugLog(workbook, `カレンダーデータ処理エラー: ${String(e)}`, "error");
-  }
 
-  debugLog(workbook, `カレンダーデータ件数: ${Object.keys(calMap).length}`);
-  return calMap;
+    // カレンダーデータを取得
+    const calRange = calSheet.getUsedRange();
+    if (!calRange) {
+        throw new Error("カレンダーシートにデータがありません。");
+    }
+
+    // カレンダーデータの配列を取得
+    const calValues = calRange.getValues();
+    const calMap: CalendarInfo = {};
+
+    debugLog(workbook, `カレンダーデータ行数: ${calValues.length}`);
+
+    try {
+        // ヘッダー行をスキップして2行目からデータを処理
+        for (let i = 1; i < calValues.length; i++) {
+            // 日付データがない行はスキップ
+            if (!calValues[i][0]) continue;
+
+            // 日付文字列に変換（明示的に型変換を行う）
+            let dateValue: string | number | boolean | Date = calValues[i][0];
+            let convertedValue: string | number | Date;
+
+            if (typeof dateValue === 'boolean') {
+                // booleanの場合は文字列に変換
+                convertedValue = String(dateValue);
+            } else {
+                convertedValue = dateValue as string | number | Date;
+            }
+
+            let dateStr: string = excelDateToString(convertedValue);
+            if (dateStr.startsWith("error:")) continue;
+
+            // 営業日フラグを取得（TRUE/true/1を営業日とみなす）
+            const isBusinessDay = calValues[i][1] === true ||
+                calValues[i][1] === "TRUE" ||
+                calValues[i][1] === 1;
+            calMap[dateStr] = isBusinessDay;
+        }
+    } catch (e) {
+        debugLog(workbook, `カレンダーデータ処理エラー: ${String(e)}`, "error");
+    }
+
+    debugLog(workbook, `カレンダーデータ件数: ${Object.keys(calMap).length}`);
+    return calMap;
+}
+
+/**
+ * 業務一覧から業務ID→業務名のマッピングを取得する関数
+ * @param workbook - Excelワークブックオブジェクト
+ * @returns Map<string, string> - 業務IDをキー、業務名を値とするマップ
+ */
+function prepareTaskNameMap(workbook: ExcelScript.Workbook): Map<string, string> {
+    try {
+        // 業務一覧シートを取得
+        const taskSheet = workbook.getWorksheet("業務一覧");
+        if (!taskSheet) {
+            throw new Error("「業務一覧」シートが見つかりません。");
+        }
+
+        // 業務一覧データの取得
+        let taskData: (string | number | boolean)[][] = [];
+        let headers: string[] = [];
+
+        // テーブルを検索
+        const tables = taskSheet.getTables();
+        if (tables.length > 0) {
+            // テーブルからデータを取得
+            const table = tables[0];
+            debugLog(workbook, `テーブル名: ${table.getName()}`);
+
+            try {
+                taskData = table.getRangeBetweenHeaderAndTotal().getValues();
+                headers = table.getHeaderRowRange().getValues()[0].map(v => String(v));
+            } catch (e) {
+                debugLog(workbook, `テーブル取得エラー: ${String(e)}`, "error");
+
+                // エラー時はシートから直接取得
+                const range = taskSheet.getUsedRange();
+                const values = range.getValues();
+                headers = values[0].map(v => String(v));
+                taskData = values.slice(1);
+            }
+        } else {
+            // テーブルがない場合はシートから直接取得
+            debugLog(workbook, "テーブルが見つからないため使用範囲からデータを取得");
+            const range = taskSheet.getUsedRange();
+            const values = range.getValues();
+            headers = values[0].map(v => String(v));
+            taskData = values.slice(1);
+        }
+
+        // 業務IDと業務名のインデックスを取得
+        const idIndex = headers.indexOf("業務ID");
+        const nameIndex = headers.indexOf("業務名");
+
+        if (idIndex === -1 || nameIndex === -1) {
+            throw new Error("業務一覧シートに業務IDまたは業務名の列がありません。");
+        }
+
+        // 業務ID→業務名のマッピングを作成
+        const taskNameMap = new Map<string, string>();
+        for (const row of taskData) {
+            const id = String(row[idIndex] || "");
+            const name = String(row[nameIndex] || "");
+
+            if (id && id !== "undefined" && id !== "null") {
+                taskNameMap.set(id, name);
+            }
+        }
+
+        debugLog(workbook, `業務名マッピング作成: ${taskNameMap.size}件`);
+        return taskNameMap;
+    } catch (e) {
+        debugLog(workbook, `業務名マッピング作成エラー: ${String(e)}`, "error");
+        return new Map<string, string>();
+    }
 }
 
 /**
@@ -433,37 +508,37 @@ function prepareCalendarMap(workbook: ExcelScript.Workbook): CalendarInfo {
  * @returns string - 直前営業日の日付（YYYY-MM-DD形式）
  */
 function getPreviousBusinessDay(inputDate: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): string {
-  try {
-    // 日付オブジェクトに変換
-    const baseDate = new Date(inputDate);
-    if (isNaN(baseDate.getTime())) {
-      debugLog(workbook, `直前営業日計算エラー: 無効な日付形式 ${inputDate}`, "error");
-      return "";
+    try {
+        // 日付オブジェクトに変換
+        const baseDate = new Date(inputDate);
+        if (isNaN(baseDate.getTime())) {
+            debugLog(workbook, `直前営業日計算エラー: 無効な日付形式 ${inputDate}`, "error");
+            return "";
+        }
+
+        // 基準日の前日から検索開始
+        const prevDate = new Date(baseDate);
+        prevDate.setDate(prevDate.getDate() - 1);
+
+        // 最大100日前まで遡って検索
+        for (let i = 0; i < 100; i++) {
+            const dateStr = formatDate(prevDate);
+
+            // 営業日の場合
+            if (calendar[dateStr] === true) {
+                return dateStr;
+            }
+
+            // 1日前にする
+            prevDate.setDate(prevDate.getDate() - 1);
+        }
+
+        // 見つからない場合
+        return "";
+    } catch (e) {
+        debugLog(workbook, `直前営業日計算エラー: ${String(e)}`, "error");
+        return "";
     }
-
-    // 基準日の前日から検索開始
-    const prevDate = new Date(baseDate);
-    prevDate.setDate(prevDate.getDate() - 1);
-
-    // 最大100日前まで遡って検索
-    for (let i = 0; i < 100; i++) {
-      const dateStr = formatDate(prevDate);
-
-      // 営業日の場合
-      if (calendar[dateStr] === true) {
-        return dateStr;
-      }
-
-      // 1日前にする
-      prevDate.setDate(prevDate.getDate() - 1);
-    }
-
-    // 見つからない場合
-    return "";
-  } catch (e) {
-    debugLog(workbook, `直前営業日計算エラー: ${String(e)}`, "error");
-    return "";
-  }
 }
 
 /**
@@ -474,37 +549,37 @@ function getPreviousBusinessDay(inputDate: string, calendar: CalendarInfo, workb
  * @returns string - 直後営業日の日付（YYYY-MM-DD形式）
  */
 function getNextBusinessDay(inputDate: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): string {
-  try {
-    // 日付オブジェクトに変換
-    const baseDate = new Date(inputDate);
-    if (isNaN(baseDate.getTime())) {
-      debugLog(workbook, `直後営業日計算エラー: 無効な日付形式 ${inputDate}`, "error");
-      return "";
+    try {
+        // 日付オブジェクトに変換
+        const baseDate = new Date(inputDate);
+        if (isNaN(baseDate.getTime())) {
+            debugLog(workbook, `直後営業日計算エラー: 無効な日付形式 ${inputDate}`, "error");
+            return "";
+        }
+
+        // 基準日の翌日から検索開始
+        const nextDate = new Date(baseDate);
+        nextDate.setDate(nextDate.getDate() + 1);
+
+        // 最大100日後まで検索
+        for (let i = 0; i < 100; i++) {
+            const dateStr = formatDate(nextDate);
+
+            // 営業日の場合
+            if (calendar[dateStr] === true) {
+                return dateStr;
+            }
+
+            // 1日後にする
+            nextDate.setDate(nextDate.getDate() + 1);
+        }
+
+        // 見つからない場合
+        return "";
+    } catch (e) {
+        debugLog(workbook, `直後営業日計算エラー: ${String(e)}`, "error");
+        return "";
     }
-
-    // 基準日の翌日から検索開始
-    const nextDate = new Date(baseDate);
-    nextDate.setDate(nextDate.getDate() + 1);
-
-    // 最大100日後まで検索
-    for (let i = 0; i < 100; i++) {
-      const dateStr = formatDate(nextDate);
-
-      // 営業日の場合
-      if (calendar[dateStr] === true) {
-        return dateStr;
-      }
-
-      // 1日後にする
-      nextDate.setDate(nextDate.getDate() + 1);
-    }
-
-    // 見つからない場合
-    return "";
-  } catch (e) {
-    debugLog(workbook, `直後営業日計算エラー: ${String(e)}`, "error");
-    return "";
-  }
 }
 
 /**
@@ -515,18 +590,18 @@ function getNextBusinessDay(inputDate: string, calendar: CalendarInfo, workbook:
  * @returns boolean - 実行対象の場合true
  */
 function isDailyTask(inputDate: string, base: string, calendar: CalendarInfo): boolean {
-  // 暦日の場合は毎日実行
-  if (!base || base === "" || base === "暦日") {
-    return true;
-  }
+    // 暦日の場合は毎日実行
+    if (!base || base === "" || base === "暦日") {
+        return true;
+    }
 
-  // 営業日指定の場合は営業日かどうかを確認
-  // 「営業日」という文字列を含むすべての基準を営業日判定する
-  if (base.includes("営業日")) {
-    return isBusinessDay(inputDate, calendar);
-  }
+    // 営業日指定の場合は営業日かどうかを確認
+    // 「営業日」という文字列を含むすべての基準を営業日判定する
+    if (base.includes("営業日")) {
+        return isBusinessDay(inputDate, calendar);
+    }
 
-  return false;
+    return false;
 }
 
 /**
@@ -537,12 +612,12 @@ function isDailyTask(inputDate: string, base: string, calendar: CalendarInfo): b
  * @returns boolean - 実行対象の場合true
  */
 function isWeeklyTask(inputDate: string, base: string, youbi: string): boolean {
-  if (base !== "暦日(曜日)" || !youbi) return false;
+    if (base !== "暦日(曜日)" || !youbi) return false;
 
-  const date = new Date(inputDate);
-  const dayOfWeek = ["日", "月", "火", "水", "木", "金", "土"][date.getDay()];
+    const date = new Date(inputDate);
+    const dayOfWeek = ["日", "月", "火", "水", "木", "金", "土"][date.getDay()];
 
-  return dayOfWeek === youbi;
+    return dayOfWeek === youbi;
 }
 
 /**
@@ -555,31 +630,31 @@ function isWeeklyTask(inputDate: string, base: string, youbi: string): boolean {
  * @returns boolean - 実行対象の場合true
  */
 function isCalendarDayNthTask(inputDate: string, n: number, furikae: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean {
-  const dateInfo = getDateInfo(inputDate, calendar);
+    const dateInfo = getDateInfo(inputDate, calendar);
 
-  // 当日が指定された日と一致するか確認
-  // 日だけではなく、「当月の指定された日」であることを確認
-  if (dateInfo.day === n) {
-    debugLog(workbook, `日付${inputDate}は${dateInfo.month}月${n}日に一致`);
-    return true;
-  }
-
-  // 振替規則がある場合の処理
-  if (furikae && (furikae === "直前営業日" || furikae === "直後営業日")) {
-    // 本来の日付を生成（当月のn日）
-    const targetDate = formatDate(new Date(dateInfo.year, dateInfo.month - 1, n));
-
-    // 本来の日付が非営業日で、かつ振替後が対象日と一致
-    if (!isBusinessDay(targetDate, calendar)) {
-      const shiftedDate = applyFurikaeRule(targetDate, furikae, calendar, workbook);
-      if (shiftedDate === inputDate) {
-        debugLog(workbook, `日付${inputDate}は${dateInfo.month}月${n}日の振替日に一致`);
+    // 当日が指定された日と一致するか確認
+    // 日だけではなく、「当月の指定された日」であることを確認
+    if (dateInfo.day === n) {
+        debugLog(workbook, `日付${inputDate}は${dateInfo.month}月${n}日に一致`);
         return true;
-      }
     }
-  }
 
-  return false;
+    // 振替規則がある場合の処理
+    if (furikae && (furikae === "直前営業日" || furikae === "直後営業日")) {
+        // 本来の日付を生成（当月のn日）
+        const targetDate = formatDate(new Date(dateInfo.year, dateInfo.month - 1, n));
+
+        // 本来の日付が非営業日で、かつ振替後が対象日と一致
+        if (!isBusinessDay(targetDate, calendar)) {
+            const shiftedDate = applyFurikaeRule(targetDate, furikae, calendar, workbook);
+            if (shiftedDate === inputDate) {
+                debugLog(workbook, `日付${inputDate}は${dateInfo.month}月${n}日の振替日に一致`);
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -592,30 +667,42 @@ function isCalendarDayNthTask(inputDate: string, n: number, furikae: string, cal
  * @returns boolean - 実行対象の場合true
  */
 function isCalendarDayEndOfMonthTask(inputDate: string, n: number, furikae: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean {
-  const dateInfo = getDateInfo(inputDate, calendar);
+    const dateInfo = getDateInfo(inputDate, calendar);
 
-  // 月末日
-  const lastDay = getLastDayOfMonth(dateInfo.year, dateInfo.month);
+    // 月末日
+    const lastDay = getLastDayOfMonth(dateInfo.year, dateInfo.month);
 
-  // 月末からn日前
-  const targetDay = n === 0 ? lastDay : lastDay - n;
+    // 月末からn日前
+    const targetDay = n === 0 ? lastDay : lastDay - n;
 
-  // 指定日と一致
-  if (dateInfo.day === targetDay) return true;
-
-  // 振替規則がある場合の処理
-  if (furikae && (furikae === "直前営業日" || furikae === "直後営業日")) {
-    // 本来の日付
-    const targetDate = formatDate(new Date(dateInfo.year, dateInfo.month - 1, targetDay));
-
-    // 本来の日付が非営業日で、かつ振替後が対象日と一致
-    if (!isBusinessDay(targetDate, calendar)) {
-      const shiftedDate = applyFurikaeRule(targetDate, furikae, calendar, workbook);
-      if (shiftedDate === inputDate) return true;
+    // 指定日と一致
+    if (dateInfo.day === targetDay) {
+        debugLog(workbook, `日付${inputDate}は${dateInfo.month}月の月末から${n}日前(${targetDay}日)に一致`);
+        
+        // 非営業日の場合は対象外とする
+        if (!dateInfo.isBusinessDay) {
+            debugLog(workbook, `日付${inputDate}は非営業日のため対象外`, "info");
+            return false;
+        }
+        
+        return true;
     }
-  }
 
-  return false;
+    // 振替規則がある場合の処理
+    if (furikae && (furikae === "直前営業日" || furikae === "直後営業日")) {
+        // 本来の日付
+        const targetDate = formatDate(new Date(dateInfo.year, dateInfo.month - 1, targetDay));        
+        // 本来の日付が非営業日で、かつ振替後が対象日と一致
+        if (!isBusinessDay(targetDate, calendar)) {
+            const shiftedDate = applyFurikaeRule(targetDate, furikae, calendar, workbook);
+            if (shiftedDate === inputDate) {
+                debugLog(workbook, `日付${inputDate}は${dateInfo.month}月の月末から${n}日前(${targetDay}日)の振替日として一致`);
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -627,19 +714,19 @@ function isCalendarDayEndOfMonthTask(inputDate: string, n: number, furikae: stri
  * @returns boolean - 実行対象の場合true
  */
 function isBusinessDayNthTask(inputDate: string, n: number, calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean {
-  // 非営業日は対象外
-  if (!isBusinessDay(inputDate, calendar)) return false;
+    // 非営業日は対象外
+    if (!isBusinessDay(inputDate, calendar)) return false;
 
-  // 営業日情報を取得
-  const businessDayInfo = getBusinessDayInfo(inputDate, calendar);
+    // 営業日情報を取得
+    const businessDayInfo = getBusinessDayInfo(inputDate, calendar);
 
-  // n営業日目と一致するか
-  const isMatch = (businessDayInfo.nth === n);
-  if (isMatch) {
-    const dateInfo = getDateInfo(inputDate, calendar);
-    debugLog(workbook, `日付${inputDate}は${dateInfo.month}月の第${n}営業日です`);
-  }
-  return isMatch;
+    // n営業日目と一致するか
+    const isMatch = (businessDayInfo.nth === n);
+    if (isMatch) {
+        const dateInfo = getDateInfo(inputDate, calendar);
+        debugLog(workbook, `日付${inputDate}は${dateInfo.month}月の第${n}営業日です (nth=${businessDayInfo.nth}, total=${businessDayInfo.total})`);
+    }
+    return isMatch;
 }
 
 /**
@@ -651,19 +738,19 @@ function isBusinessDayNthTask(inputDate: string, n: number, calendar: CalendarIn
  * @returns boolean - 実行対象の場合true
  */
 function isBusinessDayEndOfMonthTask(inputDate: string, n: number, calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean {
-  // 非営業日は対象外
-  if (!isBusinessDay(inputDate, calendar)) return false;
+    // 非営業日は対象外
+    if (!isBusinessDay(inputDate, calendar)) return false;
 
-  // 営業日情報を取得
-  const businessDayInfo = getBusinessDayInfo(inputDate, calendar);
+    // 営業日情報を取得
+    const businessDayInfo = getBusinessDayInfo(inputDate, calendar);
 
-  // 月末からのn営業日と一致するか
-  const isMatch = (businessDayInfo.reverse === n);
-  if (isMatch) {
-    const dateInfo = getDateInfo(inputDate, calendar);
-    debugLog(workbook, `日付${inputDate}は${dateInfo.month}月の最終営業日から${n}営業日前です`);
-  }
-  return isMatch;
+    // 月末からのn営業日と一致するか
+    const isMatch = (businessDayInfo.reverse === n);
+    if (isMatch) {
+        const dateInfo = getDateInfo(inputDate, calendar);
+        debugLog(workbook, `日付${inputDate}は${dateInfo.month}月の最終営業日から${n}営業日前です (reverse=${businessDayInfo.reverse})`);
+    }
+    return isMatch;
 }
 
 /**
@@ -677,34 +764,44 @@ function isBusinessDayEndOfMonthTask(inputDate: string, n: number, calendar: Cal
  * @returns boolean - 実行対象の場合true
  */
 function isCalendarDayWeekDayTask(inputDate: string, youbi: string, weekNum: number, furikae: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean {
-  if (!youbi || !weekNum) return false;
+    if (!youbi || !weekNum) return false;
 
-  const dateInfo = getDateInfo(inputDate, calendar);
+    const dateInfo = getDateInfo(inputDate, calendar);
 
-  // 曜日を数値に変換
-  const youbiIndex = ["日", "月", "火", "水", "木", "金", "土"].indexOf(youbi);
-  if (youbiIndex === -1) return false;
+    // 曜日を数値に変換
+    const youbiIndex = ["日", "月", "火", "水", "木", "金", "土"].indexOf(youbi);
+    if (youbiIndex === -1) return false;
 
-  // 第n曜日の日付を計算
-  const targetDay = getNthDayOfWeekInMonth(dateInfo.year, dateInfo.month, youbiIndex, weekNum);
-  if (targetDay === 0) return false;
-
-  // 指定日と一致
-  if (dateInfo.day === targetDay) return true;
-
-  // 振替規則がある場合の処理
-  if (furikae && (furikae === "直前営業日" || furikae === "直後営業日")) {
-    // 本来の日付
-    const targetDate = formatDate(new Date(dateInfo.year, dateInfo.month - 1, targetDay));
-
-    // 本来の日付が非営業日で、かつ振替後が対象日と一致
-    if (!isBusinessDay(targetDate, calendar)) {
-      const shiftedDate = applyFurikaeRule(targetDate, furikae, calendar, workbook);
-      if (shiftedDate === inputDate) return true;
+    // 第n曜日の日付を計算
+    const targetDay = getNthDayOfWeekInMonth(dateInfo.year, dateInfo.month, youbiIndex, weekNum);
+    if (targetDay === 0) {
+        debugLog(workbook, `${dateInfo.year}年${dateInfo.month}月に第${weekNum}${youbi}曜日は存在しません`);
+        return false; // この月にその曜日が存在しない
     }
-  }
 
-  return false;
+    // 指定日と一致
+    if (dateInfo.day === targetDay) {
+        debugLog(workbook, `日付${inputDate}は${dateInfo.month}月の第${weekNum}${youbi}曜日に一致`);
+        return true;
+    }
+
+    // 振替規則がある場合の処理
+    if (furikae && (furikae === "直前営業日" || furikae === "直後営業日")) {
+        // 本来の日付
+        const targetDate = formatDate(new Date(dateInfo.year, dateInfo.month - 1, targetDay));
+
+        // 本来の日付が非営業日で、かつ振替後が対象日と一致
+        if (!isBusinessDay(targetDate, calendar)) {
+            const shiftedDate = applyFurikaeRule(targetDate, furikae, calendar, workbook);
+            debugLog(workbook, `第${weekNum}${youbi}曜日(${targetDate})の振替日を計算: ${shiftedDate}`);
+            if (shiftedDate === inputDate) {
+                debugLog(workbook, `日付${inputDate}は${dateInfo.month}月の第${weekNum}${youbi}曜日(${targetDate})の振替日として一致`);
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -717,186 +814,186 @@ function isCalendarDayWeekDayTask(inputDate: string, youbi: string, weekNum: num
  * @returns boolean - 実行対象の場合true
  */
 function isTargetTask(
-  inputDate: string,
-  taskData: (string | number | boolean)[],
-  headers: string[],
-  calendar: CalendarInfo,
-  workbook: ExcelScript.Workbook
+    inputDate: string,
+    taskData: (string | number | boolean)[],
+    headers: string[],
+    calendar: CalendarInfo,
+    workbook: ExcelScript.Workbook
 ): boolean {
-  try {
-    // 業務ID
-    const idIdx = headers.indexOf("業務ID");
-    const id = idIdx >= 0 ? String(taskData[idIdx] || "") : "未定義";
+    try {
+        // 業務ID
+        const idIdx = headers.indexOf("業務ID");
+        const id = idIdx >= 0 ? String(taskData[idIdx] || "") : "未定義";
 
-    // 有効期間チェック
-    const startDateIdx = headers.indexOf("有効開始日");
-    const endDateIdx = headers.indexOf("有効終了日");
+        // 有効期間チェック
+        const startDateIdx = headers.indexOf("有効開始日");
+        const endDateIdx = headers.indexOf("有効終了日");
 
-    if (startDateIdx !== -1) {
-      const startDate = String(taskData[startDateIdx] || "");
-      if (startDate) {
-        const startDateStr = excelDateToString(startDate);
-        if (!startDateStr.startsWith("error:") && inputDate < startDateStr) {
-          debugLog(workbook, `業務ID=${id}: 有効開始日(${startDateStr})前のため対象外`, "info");
-          return false;
+        if (startDateIdx !== -1) {
+            const startDate = String(taskData[startDateIdx] || "");
+            if (startDate) {
+                const startDateStr = excelDateToString(startDate);
+                if (!startDateStr.startsWith("error:") && inputDate < startDateStr) {
+                    debugLog(workbook, `業務ID=${id}: 有効開始日(${startDateStr})前のため対象外`, "info");
+                    return false;
+                }
+            }
         }
-      }
-    }
 
-    if (endDateIdx !== -1) {
-      const endDate = String(taskData[endDateIdx] || "");
-      if (endDate) {
-        const endDateStr = excelDateToString(endDate);
-        if (!endDateStr.startsWith("error:") && inputDate > endDateStr) {
-          debugLog(workbook, `業務ID=${id}: 有効終了日(${endDateStr})後のため対象外`, "info");
-          return false;
+        if (endDateIdx !== -1) {
+            const endDate = String(taskData[endDateIdx] || "");
+            if (endDate) {
+                const endDateStr = excelDateToString(endDate);
+                if (!endDateStr.startsWith("error:") && inputDate > endDateStr) {
+                    debugLog(workbook, `業務ID=${id}: 有効終了日(${endDateStr})後のため対象外`, "info");
+                    return false;
+                }
+            }
         }
-      }
-    }
 
-    // 周期・頻度
-    const freqIdx = headers.indexOf("周期・頻度");
-    const freq = freqIdx >= 0 ? String(taskData[freqIdx] || "") : "";
+        // 周期・頻度
+        const freqIdx = headers.indexOf("周期・頻度");
+        const freq = freqIdx >= 0 ? String(taskData[freqIdx] || "") : "";
 
-    // 基準
-    const baseIdx = headers.indexOf("基準");
-    const base = baseIdx >= 0 ? String(taskData[baseIdx] || "") : "";
+        // 基準
+        const baseIdx = headers.indexOf("基準");
+        const base = baseIdx >= 0 ? String(taskData[baseIdx] || "") : "";
 
-    // 月
-    const monthIdx = headers.indexOf("月");
-    const monthValue = monthIdx >= 0 ? (taskData[monthIdx] !== undefined ? taskData[monthIdx] : "") : "";
-    const month = monthValue !== "" ? Number(monthValue) : null;
+        // 月
+        const monthIdx = headers.indexOf("月");
+        const monthValue = monthIdx >= 0 ? (taskData[monthIdx] !== undefined ? taskData[monthIdx] : "") : "";
+        const month = monthValue !== "" ? Number(monthValue) : null;
 
-    // 週番号
-    const weekNumIdx = headers.indexOf("週番号");
-    const weekNumValue = weekNumIdx >= 0 ? (taskData[weekNumIdx] !== undefined ? taskData[weekNumIdx] : "") : "";
-    const weekNum = weekNumValue !== "" ? Number(weekNumValue) : null;
+        // 週番号
+        const weekNumIdx = headers.indexOf("週番号");
+        const weekNumValue = weekNumIdx >= 0 ? (taskData[weekNumIdx] !== undefined ? taskData[weekNumIdx] : "") : "";
+        const weekNum = weekNumValue !== "" ? Number(weekNumValue) : null;
 
-    // 曜日
-    const youbiIdx = headers.indexOf("曜日");
-    const youbi = youbiIdx >= 0 ? String(taskData[youbiIdx] || "") : "";
+        // 曜日
+        const youbiIdx = headers.indexOf("曜日");
+        const youbi = youbiIdx >= 0 ? String(taskData[youbiIdx] || "") : "";
 
-    // n日
-    const nDayIdx = headers.indexOf("n日");
-    const nDayValue = nDayIdx >= 0 ? (taskData[nDayIdx] !== undefined ? taskData[nDayIdx] : "") : "";
-    const nDay = nDayValue !== "" ? Number(nDayValue) : null;
+        // n日
+        const nDayIdx = headers.indexOf("n日");
+        const nDayValue = nDayIdx >= 0 ? (taskData[nDayIdx] !== undefined ? taskData[nDayIdx] : "") : "";
+        const nDay = nDayValue !== "" ? Number(nDayValue) : null;
 
-    // 非営業日振替規則
-    const furikaeIdx = headers.indexOf("非営業日振替規則");
-    const furikae = furikaeIdx >= 0 ? String(taskData[furikaeIdx] || "") : "";
+        // 非営業日振替規則
+        const furikaeIdx = headers.indexOf("非営業日振替規則");
+        const furikae = furikaeIdx >= 0 ? String(taskData[furikaeIdx] || "") : "";
 
-    // デバッグ出力
-    debugLog(workbook, `業務ID=${id} 判定: 日付=${inputDate}, 周期=${freq}, 基準=${base}, 月=${month}, 週=${weekNum}, 曜日=${youbi}, n日=${nDay}, 振替=${furikae}`);
+        // デバッグ出力
+        debugLog(workbook, `業務ID=${id} 判定: 日付=${inputDate}, 周期=${freq}, 基準=${base}, 月=${month}, 週=${weekNum}, 曜日=${youbi}, n日=${nDay}, 振替=${furikae}`);
 
-    // 対象日の情報
-    const dateInfo = getDateInfo(inputDate, calendar);
+        // 対象日の情報
+        const dateInfo = getDateInfo(inputDate, calendar);
 
-    // 年次業務の場合は月指定が必須
-    if (freq === "年次") {
-      if (month === null || month !== dateInfo.month) {
-        debugLog(workbook, `業務ID=${id}: 月不一致のため対象外 (設定月=${month}, 当月=${dateInfo.month})`, "info");
+        // 年次業務の場合は月指定が必須
+        if (freq === "年次") {
+            if (month === null || month !== dateInfo.month) {
+                debugLog(workbook, `業務ID=${id}: 月不一致のため対象外 (設定月=${month}, 当月=${dateInfo.month})`, "info");
+                return false;
+            }
+        }
+
+        // ======== 日次業務 ========
+        if (freq === "日次") {
+            const result = isDailyTask(inputDate, base, calendar);
+            debugLog(workbook, `業務ID=${id}: 日次判定結果=${result}`);
+            return result;
+        }
+
+        // ======== 週次業務 ========
+        if (freq === "週次") {
+            const result = isWeeklyTask(inputDate, base, youbi);
+            debugLog(workbook, `業務ID=${id}: 週次判定結果=${result}`);
+            return result;
+        }
+
+        // ======== 月次業務 ========
+        if (freq === "月次") {
+            // 1. 暦日(n日指定)
+            if ((base === "暦日(n日指定)" || base === "暦日(〇日指定)" || base === "暦日(○日指定)") && nDay !== null) {
+                const result = isCalendarDayNthTask(inputDate, nDay, furikae, calendar, workbook);
+                debugLog(workbook, `業務ID=${id}: 月次・暦日(n日指定)判定結果=${result}`);
+                return result;
+            }
+
+            // 2. 暦日(月末逆算)
+            if (base === "暦日(月末逆算)" && (nDay !== null || nDay === 0)) {
+                const result = isCalendarDayEndOfMonthTask(inputDate, nDay, furikae, calendar, workbook);
+                debugLog(workbook, `業務ID=${id}: 月次・暦日(月末逆算)判定結果=${result}`);
+                return result;
+            }
+
+            // 3. 営業日(n日指定)
+            if ((base === "営業日(n日指定)" || base === "営業日(〇日指定)" || base === "営業日(○日指定)") && nDay !== null) {
+                const result = isBusinessDayNthTask(inputDate, nDay, calendar, workbook);
+                debugLog(workbook, `業務ID=${id}: 月次・営業日(n日指定)判定結果=${result}`);
+                return result;
+            }
+
+            // 4. 営業日(月末逆算)
+            if (base === "営業日(月末逆算)" && (nDay !== null || nDay === 0)) {
+                const result = isBusinessDayEndOfMonthTask(inputDate, nDay, calendar, workbook);
+                debugLog(workbook, `業務ID=${id}: 月次・営業日(月末逆算)判定結果=${result}`);
+                return result;
+            }
+
+            // 5. 暦日(曜日)
+            if (base === "暦日(曜日)" && youbi && weekNum !== null) {
+                const result = isCalendarDayWeekDayTask(inputDate, youbi, weekNum, furikae, calendar, workbook);
+                debugLog(workbook, `業務ID=${id}: 月次・暦日(曜日)判定結果=${result}`);
+                return result;
+            }
+        }
+
+        // ======== 年次業務 ========
+        if (freq === "年次") {
+            // 月チェックは既に行っているのでここでは条件判定のみ
+
+            // 1. 暦日(n日指定)
+            if ((base === "暦日(n日指定)" || base === "暦日(〇日指定)" || base === "暦日(○日指定)") && nDay !== null) {
+                const result = isCalendarDayNthTask(inputDate, nDay, furikae, calendar, workbook);
+                debugLog(workbook, `業務ID=${id}: 年次・暦日(n日指定)判定結果=${result}`);
+                return result;
+            }
+
+            // 2. 暦日(月末逆算)
+            if (base === "暦日(月末逆算)" && (nDay !== null || nDay === 0)) {
+                const result = isCalendarDayEndOfMonthTask(inputDate, nDay, furikae, calendar, workbook);
+                debugLog(workbook, `業務ID=${id}: 年次・暦日(月末逆算)判定結果=${result}`);
+                return result;
+            }
+
+            // 3. 営業日(n日指定)
+            if ((base === "営業日(n日指定)" || base === "営業日(〇日指定)" || base === "営業日(○日指定)") && nDay !== null) {
+                const result = isBusinessDayNthTask(inputDate, nDay, calendar, workbook);
+                debugLog(workbook, `業務ID=${id}: 年次・営業日(n日指定)判定結果=${result}`);
+                return result;
+            }
+
+            // 4. 営業日(月末逆算)
+            if (base === "営業日(月末逆算)" && (nDay !== null || nDay === 0)) {
+                const result = isBusinessDayEndOfMonthTask(inputDate, nDay, calendar, workbook);
+                debugLog(workbook, `業務ID=${id}: 年次・営業日(月末逆算)判定結果=${result}`);
+                return result;
+            }
+
+            // 5. 暦日(曜日)
+            if (base === "暦日(曜日)" && youbi && weekNum !== null) {
+                const result = isCalendarDayWeekDayTask(inputDate, youbi, weekNum, furikae, calendar, workbook);
+                debugLog(workbook, `業務ID=${id}: 年次・暦日(曜日)判定結果=${result}`);
+                return result;
+            }
+        }
+
+        debugLog(workbook, `業務ID=${id}: どの条件にも一致せず対象外`);
         return false;
-      }
+    } catch (e) {
+        debugLog(workbook, `業務判定エラー: ${String(e)}`, "error");
+        return false;
     }
-
-    // ======== 日次業務 ========
-    if (freq === "日次") {
-      const result = isDailyTask(inputDate, base, calendar);
-      debugLog(workbook, `業務ID=${id}: 日次判定結果=${result}`);
-      return result;
-    }
-
-    // ======== 週次業務 ========
-    if (freq === "週次") {
-      const result = isWeeklyTask(inputDate, base, youbi);
-      debugLog(workbook, `業務ID=${id}: 週次判定結果=${result}`);
-      return result;
-    }
-
-    // ======== 月次業務 ========
-    if (freq === "月次") {
-      // 1. 暦日(n日指定)
-      if ((base === "暦日(n日指定)" || base === "暦日(〇日指定)" || base === "暦日(○日指定)") && nDay !== null) {
-        const result = isCalendarDayNthTask(inputDate, nDay, furikae, calendar, workbook);
-        debugLog(workbook, `業務ID=${id}: 月次・暦日(n日指定)判定結果=${result}`);
-        return result;
-      }
-
-      // 2. 暦日(月末逆算)
-      if (base === "暦日(月末逆算)" && (nDay !== null || nDay === 0)) {
-        const result = isCalendarDayEndOfMonthTask(inputDate, nDay, furikae, calendar, workbook);
-        debugLog(workbook, `業務ID=${id}: 月次・暦日(月末逆算)判定結果=${result}`);
-        return result;
-      }
-
-      // 3. 営業日(n日指定)
-      if ((base === "営業日(n日指定)" || base === "営業日(〇日指定)" || base === "営業日(○日指定)") && nDay !== null) {
-        const result = isBusinessDayNthTask(inputDate, nDay, calendar, workbook);
-        debugLog(workbook, `業務ID=${id}: 月次・営業日(n日指定)判定結果=${result}`);
-        return result;
-      }
-
-      // 4. 営業日(月末逆算)
-      if (base === "営業日(月末逆算)" && (nDay !== null || nDay === 0)) {
-        const result = isBusinessDayEndOfMonthTask(inputDate, nDay, calendar, workbook);
-        debugLog(workbook, `業務ID=${id}: 月次・営業日(月末逆算)判定結果=${result}`);
-        return result;
-      }
-
-      // 5. 暦日(曜日)
-      if (base === "暦日(曜日)" && youbi && weekNum !== null) {
-        const result = isCalendarDayWeekDayTask(inputDate, youbi, weekNum, furikae, calendar, workbook);
-        debugLog(workbook, `業務ID=${id}: 月次・暦日(曜日)判定結果=${result}`);
-        return result;
-      }
-    }
-
-    // ======== 年次業務 ========
-    if (freq === "年次") {
-      // 月チェックは既に行っているのでここでは条件判定のみ
-
-      // 1. 暦日(n日指定)
-      if ((base === "暦日(n日指定)" || base === "暦日(〇日指定)" || base === "暦日(○日指定)") && nDay !== null) {
-        const result = isCalendarDayNthTask(inputDate, nDay, furikae, calendar, workbook);
-        debugLog(workbook, `業務ID=${id}: 年次・暦日(n日指定)判定結果=${result}`);
-        return result;
-      }
-
-      // 2. 暦日(月末逆算)
-      if (base === "暦日(月末逆算)" && (nDay !== null || nDay === 0)) {
-        const result = isCalendarDayEndOfMonthTask(inputDate, nDay, furikae, calendar, workbook);
-        debugLog(workbook, `業務ID=${id}: 年次・暦日(月末逆算)判定結果=${result}`);
-        return result;
-      }
-
-      // 3. 営業日(n日指定)
-      if ((base === "営業日(n日指定)" || base === "営業日(〇日指定)" || base === "営業日(○日指定)") && nDay !== null) {
-        const result = isBusinessDayNthTask(inputDate, nDay, calendar, workbook);
-        debugLog(workbook, `業務ID=${id}: 年次・営業日(n日指定)判定結果=${result}`);
-        return result;
-      }
-
-      // 4. 営業日(月末逆算)
-      if (base === "営業日(月末逆算)" && (nDay !== null || nDay === 0)) {
-        const result = isBusinessDayEndOfMonthTask(inputDate, nDay, calendar, workbook);
-        debugLog(workbook, `業務ID=${id}: 年次・営業日(月末逆算)判定結果=${result}`);
-        return result;
-      }
-
-      // 5. 暦日(曜日)
-      if (base === "暦日(曜日)" && youbi && weekNum !== null) {
-        const result = isCalendarDayWeekDayTask(inputDate, youbi, weekNum, furikae, calendar, workbook);
-        debugLog(workbook, `業務ID=${id}: 年次・暦日(曜日)判定結果=${result}`);
-        return result;
-      }
-    }
-
-    debugLog(workbook, `業務ID=${id}: どの条件にも一致せず対象外`);
-    return false;
-  } catch (e) {
-    debugLog(workbook, `業務判定エラー: ${String(e)}`, "error");
-    return false;
-  }
 }
 
 /**
@@ -904,44 +1001,43 @@ function isTargetTask(
  * 入力日付もこのスケジュールシートに作成します
  * 既存データがある場合は消去せず、その次の行から追加します
  */
-function getScheduleSheet(workbook: ExcelScript.Workbook) {
-  // 業務スケジュールシートの準備
-  let scheduleSheet = workbook.getWorksheet("業務スケジュール");
-  if (!scheduleSheet) {
-    debugLog(workbook, "業務スケジュールシートを新規作成");
-    scheduleSheet = workbook.addWorksheet("業務スケジュール");
+function getScheduleSheet(workbook: ExcelScript.Workbook) {  // 業務スケジュールシートの準備
+    let scheduleSheet = workbook.getWorksheet("業務スケジュール");
+    if (!scheduleSheet) {
+        debugLog(workbook, "業務スケジュールシートを新規作成");
+        scheduleSheet = workbook.addWorksheet("業務スケジュール");
 
-    // 日付入力用
-    scheduleSheet.getRange("A1:C1").setValues([["日付", formatDateBySlash(new Date), "曜日"]]);
+        // 日付入力用
+        scheduleSheet.getRange("A1:C1").setValues([["日付", formatDateBySlash(new Date), "曜日"]]);
 
-    // スケジュールのヘッダー行を設定（新規作成時のみ） 
-    scheduleSheet.getRange("A3:I3").setValues([["スケジュールID", "業務ID", "予定日", "作業者", "開始予定時刻", "実開始時刻", "実終了時刻", "ステータス", "メモ"]]);
+        // スケジュールのヘッダー行を設定（新規作成時のみ） 
+        scheduleSheet.getRange("A3:J3").setValues([["スケジュールID", "業務ID", "業務名", "予定日", "作業者", "開始予定時刻", "実開始時刻", "実終了時刻", "ステータス", "メモ"]]);
 
-    // フォーマット設定
-    scheduleSheet.getRange("A3:I3").getFormat().getFill().setColor("#4472C4");
-    scheduleSheet.getRange("A3:I3").getFormat().getFont().setColor("white");
-    scheduleSheet.getRange("A3:I3").getFormat().getFont().setBold(true);
-  } else {
-    // ヘッダーが正しく設定されているか確認
-    // たまになぜか消えるのでヘッダーは作成するようにしてます
-    // スケジュールのヘッダー行を設定 
-    scheduleSheet.getRange("A3:I3").setValues([["スケジュールID", "業務ID", "予定日", "作業者", "開始予定時刻", "実開始時刻", "実終了時刻", "ステータス", "メモ"]]);
-    // フォーマット設定
-    scheduleSheet.getRange("A3:I3").getFormat().getFill().setColor("#4472C4");
-    scheduleSheet.getRange("A3:I3").getFormat().getFont().setColor("white");
-    scheduleSheet.getRange("A3:I3").getFormat().getFont().setBold(true);
+        // フォーマット設定
+        scheduleSheet.getRange("A3:J3").getFormat().getFill().setColor("#4472C4");
+        scheduleSheet.getRange("A3:J3").getFormat().getFont().setColor("white");
+        scheduleSheet.getRange("A3:J3").getFormat().getFont().setBold(true);
+    } else {
+        // ヘッダーが正しく設定されているか確認
+        // たまになぜか消えるのでヘッダーは作成するようにしてます
+        // スケジュールのヘッダー行を設定 
+        scheduleSheet.getRange("A3:J3").setValues([["スケジュールID", "業務ID", "業務名", "予定日", "作業者", "開始予定時刻", "実開始時刻", "実終了時刻", "ステータス", "メモ"]]);
+        // フォーマット設定
+        scheduleSheet.getRange("A3:J3").getFormat().getFill().setColor("#4472C4");
+        scheduleSheet.getRange("A3:J3").getFormat().getFont().setColor("white");
+        scheduleSheet.getRange("A3:J3").getFormat().getFont().setBold(true);
 
-    // 既存のデータは消去しない
-    // // 既存のデータをクリア
-    // const existingRange = scheduleSheet.getUsedRange();
-    // if (existingRange && existingRange.getRowCount() > 1) {
-    //   // ヘッダー行以外をクリア
-    //   const dataRange = scheduleSheet.getRange(`A4:C${existingRange.getRowCount()}`);
-    //   dataRange.clear();
-    // }
-  }
+        // 既存のデータは消去しない
+        // // 既存のデータをクリア
+        // const existingRange = scheduleSheet.getUsedRange();
+        // if (existingRange && existingRange.getRowCount() > 1) {
+        //   // ヘッダー行以外をクリア
+        //   const dataRange = scheduleSheet.getRange(`A4:C${existingRange.getRowCount()}`);
+        //   dataRange.clear();
+        // }
+    }
 
-  return scheduleSheet;
+    return scheduleSheet;
 }
 
 /**
@@ -950,41 +1046,41 @@ function getScheduleSheet(workbook: ExcelScript.Workbook) {
  * @returns { lastRowIndex: number, maxScheduleId: number } - 最終行のインデックスと最大のスケジュールID
  */
 function getExistingScheduleInfo(scheduleSheet: ExcelScript.Worksheet): { lastRowIndex: number, maxScheduleId: number } {
-  try {
-    // 使用範囲を取得
-    const usedRange = scheduleSheet.getUsedRange();
+    try {
+        // 使用範囲を取得
+        const usedRange = scheduleSheet.getUsedRange();
 
-    // 使用範囲がない場合や、ヘッダー行だけの場合
-    if (!usedRange || usedRange.getRowCount() <= 3) {
-      return { lastRowIndex: 4, maxScheduleId: 0 }; // ヘッダー行の次から開始
-    }
-
-    // 使用範囲の行数を取得して最終行インデックスを計算
-    const lastRowIndex = usedRange.getRowCount() + 1; // 次の空行から開始
-
-    // 最大のスケジュールIDを探す
-    // スケジュールIDは最初の列にあると想定
-    const scheduleIdRange = scheduleSheet.getRange(`A4:A${usedRange.getRowCount()}`);
-    const scheduleIds = scheduleIdRange.getValues();
-
-    let maxScheduleId = 0;
-    for (let i = 0; i < scheduleIds.length; i++) {
-      const idValue = scheduleIds[i][0];
-      if (idValue && typeof idValue === 'number') {
-        maxScheduleId = Math.max(maxScheduleId, idValue);
-      } else if (idValue && typeof idValue === 'string') {
-        const parsedId = parseInt(idValue as string, 10);
-        if (!isNaN(parsedId)) {
-          maxScheduleId = Math.max(maxScheduleId, parsedId);
+        // 使用範囲がない場合や、ヘッダー行だけの場合
+        if (!usedRange || usedRange.getRowCount() <= 3) {
+            return { lastRowIndex: 4, maxScheduleId: 0 }; // ヘッダー行の次から開始
         }
-      }
-    }
 
-    return { lastRowIndex, maxScheduleId };
-  } catch (e) {
-    // エラーが発生した場合は安全なデフォルト値を返す
-    return { lastRowIndex: 4, maxScheduleId: 0 };
-  }
+        // 使用範囲の行数を取得して最終行インデックスを計算
+        const lastRowIndex = usedRange.getRowCount() + 1; // 次の空行から開始
+
+        // 最大のスケジュールIDを探す
+        // スケジュールIDは最初の列にあると想定
+        const scheduleIdRange = scheduleSheet.getRange(`A4:A${usedRange.getRowCount()}`);
+        const scheduleIds = scheduleIdRange.getValues();
+
+        let maxScheduleId = 0;
+        for (let i = 0; i < scheduleIds.length; i++) {
+            const idValue = scheduleIds[i][0];
+            if (idValue && typeof idValue === 'number') {
+                maxScheduleId = Math.max(maxScheduleId, idValue);
+            } else if (idValue && typeof idValue === 'string') {
+                const parsedId = parseInt(idValue as string, 10);
+                if (!isNaN(parsedId)) {
+                    maxScheduleId = Math.max(maxScheduleId, parsedId);
+                }
+            }
+        }
+
+        return { lastRowIndex, maxScheduleId };
+    } catch (e) {
+        // エラーが発生した場合は安全なデフォルト値を返す
+        return { lastRowIndex: 4, maxScheduleId: 0 };
+    }
 }
 
 /**
@@ -1000,80 +1096,85 @@ function getExistingScheduleInfo(scheduleSheet: ExcelScript.Worksheet): { lastRo
  * @returns boolean - 条件に一致する場合true
  */
 function isMatchingOriginalCondition(
-  dateStr: string,
-  freq: string,
-  base: string,
-  month: number | null,
-  weekNum: number | null,
-  youbi: string,
-  nDay: number | null,
-  calendar: CalendarInfo
+    dateStr: string,
+    freq: string,
+    base: string,
+    month: number | null,
+    weekNum: number | null,
+    youbi: string,
+    nDay: number | null,
+    calendar: CalendarInfo
 ): boolean {
-  const dateInfo = getDateInfo(dateStr, calendar);
+    try {
+        const dateInfo = getDateInfo(dateStr, calendar);
 
-  // 年次業務の場合は月が一致するかチェック
-  if (freq === "年次" && month !== null && month !== dateInfo.month) {
-    return false;
-  }
+        // 年次業務の場合は月が一致するかチェック
+        if (freq === "年次" && month !== null && month !== dateInfo.month) {
+            return false;
+        }
 
-  // 日次業務
-  if (freq === "日次") {
-    return !base || base === "" || base === "暦日" || (base.includes("営業日") && isBusinessDay(dateStr, calendar));
-  }
+        // 日次業務
+        if (freq === "日次") {
+            return !base || base === "" || base === "暦日" || (base.includes("営業日") && isBusinessDay(dateStr, calendar));
+        }
 
-  // 週次業務
-  if (freq === "週次" && base === "暦日(曜日)" && youbi) {
-    const dayOfWeek = ["日", "月", "火", "水", "木", "金", "土"][dateInfo.dayOfWeek];
-    return dayOfWeek === youbi;
-  }
+        // 週次業務
+        if (freq === "週次" && base === "暦日(曜日)" && youbi) {
+            const dayOfWeek = ["日", "月", "火", "水", "木", "金", "土"][dateInfo.dayOfWeek];
+            return dayOfWeek === youbi;
+        }
 
-  // 月次・年次業務の各基準
-  // 1. 暦日(n日指定)
-  if ((base === "暦日(n日指定)" || base === "暦日(〇日指定)" || base === "暦日(○日指定)") && nDay !== null) {
-    return dateInfo.day === nDay;
-  }
+        // 月次・年次業務の各基準
+        // 1. 暦日(n日指定)
+        if ((base === "暦日(n日指定)" || base === "暦日(〇日指定)" || base === "暦日(○日指定)") && nDay !== null) {
+            return dateInfo.day === nDay;
+        }
 
-  // 2. 暦日(月末逆算)
-  if (base === "暦日(月末逆算)" && (nDay !== null || nDay === 0)) {
-    const lastDay = getLastDayOfMonth(dateInfo.year, dateInfo.month);
-    const targetDay = nDay === 0 ? lastDay : lastDay - nDay;
-    return dateInfo.day === targetDay;
-  }
+        // 2. 暦日(月末逆算)
+        if (base === "暦日(月末逆算)" && (nDay !== null || nDay === 0)) {
+            const lastDay = getLastDayOfMonth(dateInfo.year, dateInfo.month);
+            const targetDay = nDay === 0 ? lastDay : lastDay - nDay;
+            return dateInfo.day === targetDay;
+        }
 
-  // 3. 営業日(n日指定)
-  if ((base === "営業日(n日指定)" || base === "営業日(〇日指定)" || base === "営業日(○日指定)") && nDay !== null) {
-    // 非営業日は対象外
-    if (!isBusinessDay(dateStr, calendar)) return false;
+        // 3. 営業日(n日指定)
+        if ((base === "営業日(n日指定)" || base === "営業日(〇日指定)" || base === "営業日(○日指定)") && nDay !== null) {
+            // 非営業日は対象外
+            if (!isBusinessDay(dateStr, calendar)) return false;
 
-    // 営業日情報を取得
-    const businessDayInfo = getBusinessDayInfo(dateStr, calendar);
-    return businessDayInfo.nth === nDay;
-  }
+            // 営業日情報を取得
+            const businessDayInfo = getBusinessDayInfo(dateStr, calendar);
+            return businessDayInfo.nth === nDay;
+        }
 
-  // 4. 営業日(月末逆算)
-  if (base === "営業日(月末逆算)" && (nDay !== null || nDay === 0)) {
-    // 非営業日は対象外
-    if (!isBusinessDay(dateStr, calendar)) return false;
+        // 4. 営業日(月末逆算)
+        if (base === "営業日(月末逆算)" && (nDay !== null || nDay === 0)) {
+            // 非営業日は対象外
+            if (!isBusinessDay(dateStr, calendar)) return false;
 
-    // 営業日情報を取得
-    const businessDayInfo = getBusinessDayInfo(dateStr, calendar);
-    return businessDayInfo.reverse === nDay;
-  }
+            // 営業日情報を取得
+            const businessDayInfo = getBusinessDayInfo(dateStr, calendar);
+            return businessDayInfo.reverse === nDay;
+        }
 
-  // 5. 暦日(曜日)
-  if (base === "暦日(曜日)" && youbi && weekNum !== null) {
-    // 曜日を数値に変換
-    const youbiIndex = ["日", "月", "火", "水", "木", "金", "土"].indexOf(youbi);
-    if (youbiIndex === -1) return false;
+        // 5. 暦日(曜日)
+        if (base === "暦日(曜日)" && youbi && weekNum !== null) {
+            // 曜日を数値に変換
+            const youbiIndex = ["日", "月", "火", "水", "木", "金", "土"].indexOf(youbi);
+            if (youbiIndex === -1) return false;
 
-    // 第n曜日の日付を計算
-    const targetDay = getNthDayOfWeekInMonth(dateInfo.year, dateInfo.month, youbiIndex, weekNum);
-    if (targetDay === 0) return false;
+            // 第n曜日の日付を計算
+            const targetDay = getNthDayOfWeekInMonth(dateInfo.year, dateInfo.month, youbiIndex, weekNum);
+            if (targetDay === 0) return false;
 
-    return dateInfo.day === targetDay;
-  }
+            return dateInfo.day === targetDay;
+        }
 
-  return false;
+        return false;
+    } catch (e) {
+        // エラーが発生した場合は安全にfalseを返す
+        return false;
+    }
 }
 
 /**
@@ -1086,132 +1187,169 @@ function isMatchingOriginalCondition(
  * @returns boolean - 振替先として一致する場合true
  */
 function isTargetDateForFurikae(
-  inputDate: string,
-  taskData: (string | number | boolean)[],
-  headers: string[],
-  calendar: CalendarInfo,
-  workbook: ExcelScript.Workbook
+    inputDate: string,
+    taskData: (string | number | boolean)[],
+    headers: string[],
+    calendar: CalendarInfo,
+    workbook: ExcelScript.Workbook
 ): boolean {
-  try {
-    // 対象日が営業日でなければ振替先にはならない
-    if (!isBusinessDay(inputDate, calendar)) {
-      return false;
-    }
-
-    // 業務ID取得（デバッグ用）
-    const idIdx = headers.indexOf("業務ID");
-    const id = idIdx >= 0 ? String(taskData[idIdx] || "") : "未定義";
-
-    // 基準
-    const baseIdx = headers.indexOf("基準");
-    const base = baseIdx >= 0 ? String(taskData[baseIdx] || "") : "";
-
-    // n日
-    const nDayIdx = headers.indexOf("n日");
-    const nDayValue = nDayIdx >= 0 ? (taskData[nDayIdx] !== undefined ? taskData[nDayIdx] : "") : "";
-    const nDay = nDayValue !== "" ? Number(nDayValue) : null;
-
-    // 月
-    const monthIdx = headers.indexOf("月");
-    const monthValue = monthIdx >= 0 ? (taskData[monthIdx] !== undefined ? taskData[monthIdx] : "") : "";
-    const month = monthValue !== "" ? Number(monthValue) : null;
-
-    // 非営業日振替規則
-    const furikaeIdx = headers.indexOf("非営業日振替規則");
-    const furikae = furikaeIdx >= 0 ? String(taskData[furikaeIdx] || "") : "";
-
-    // 振替規則がない場合や振替しない場合はチェック不要
-    if (!furikae || furikae === "振替しない") {
-      return false;
-    }
-
-    // 周期・頻度
-    const freqIdx = headers.indexOf("周期・頻度");
-    const freq = freqIdx >= 0 ? String(taskData[freqIdx] || "") : "";
-
-    // 曜日
-    const youbiIdx = headers.indexOf("曜日");
-    const youbi = youbiIdx >= 0 ? String(taskData[youbiIdx] || "") : "";
-
-    // 週番号
-    const weekNumIdx = headers.indexOf("週番号");
-    const weekNumValue = weekNumIdx >= 0 ? (taskData[weekNumIdx] !== undefined ? taskData[weekNumIdx] : "") : "";
-    const weekNum = weekNumValue !== "" ? Number(weekNumValue) : null;
-
-    // 直前営業日の振替ロジック
-    if (furikae === "直前営業日") {
-      debugLog(workbook, `業務ID=${id}: 振替対象日判定(直前営業日)を行います`);
-      // 翌日から順に確認し、営業日または100日を超えるまでループ
-      let nextDateObj = new Date(inputDate);
-      let dayCount = 0;
-      const maxDays = 100; // 最大日数
-
-      while (dayCount < maxDays) {
-        dayCount++;
-        // 翌日に移動
-        nextDateObj.setDate(nextDateObj.getDate() + 1);
-        const nextDateStr = formatDate(nextDateObj);
-
-        // 営業日なら終了（連続した非営業日ではない）
-        if (isBusinessDay(nextDateStr, calendar)) {
-          break;
+    try {
+        // 対象日が営業日でなければ振替先にはならない
+        if (!isBusinessDay(inputDate, calendar)) {
+            return false;
         }
 
-        // この非営業日が業務条件に一致するか確認
-        const isOriginalTargetDate = isMatchingOriginalCondition(
-          nextDateStr, freq, base, month, weekNum, youbi, nDay, calendar
-        );
+        // 業務ID取得（デバッグ用）
+        const idIdx = headers.indexOf("業務ID");
+        const id = idIdx >= 0 ? String(taskData[idIdx] || "") : "未定義";
 
-        // 元の日付が業務条件に一致し、その直前営業日がinputDateであれば振替対象
-        if (isOriginalTargetDate) {
-          const prevBusinessDay = getPreviousBusinessDay(nextDateStr, calendar, workbook);
-          if (prevBusinessDay === inputDate) {
-            debugLog(workbook, `業務ID=${id}: 日付${inputDate}は${nextDateStr}の直前営業日振替として対象`);
-            return true;
-          }
+        // 基準
+        const baseIdx = headers.indexOf("基準");
+        const base = baseIdx >= 0 ? String(taskData[baseIdx] || "") : "";
+
+        // n日
+        const nDayIdx = headers.indexOf("n日");
+        const nDayValue = nDayIdx >= 0 ? (taskData[nDayIdx] !== undefined ? taskData[nDayIdx] : "") : "";
+        const nDay = nDayValue !== "" ? Number(nDayValue) : null;
+
+        // 月
+        const monthIdx = headers.indexOf("月");
+        const monthValue = monthIdx >= 0 ? (taskData[monthIdx] !== undefined ? taskData[monthIdx] : "") : "";
+        const month = monthValue !== "" ? Number(monthValue) : null;
+
+        // 非営業日振替規則
+        const furikaeIdx = headers.indexOf("非営業日振替規則");
+        const furikae = furikaeIdx >= 0 ? String(taskData[furikaeIdx] || "") : "";
+
+        // 振替規則がない場合や振替しない場合はチェック不要
+        if (!furikae || furikae === "振替しない") {
+            return false;
         }
-      }
+
+        // 周期・頻度
+        const freqIdx = headers.indexOf("周期・頻度");
+        const freq = freqIdx >= 0 ? String(taskData[freqIdx] || "") : "";
+
+        // 曜日
+        const youbiIdx = headers.indexOf("曜日");
+        const youbi = youbiIdx >= 0 ? String(taskData[youbiIdx] || "") : "";
+
+        // 週番号
+        const weekNumIdx = headers.indexOf("週番号");
+        const weekNumValue = weekNumIdx >= 0 ? (taskData[weekNumIdx] !== undefined ? taskData[weekNumIdx] : "") : "";
+        const weekNum = weekNumValue !== "" ? Number(weekNumValue) : null;
+
+        // デバッグ出力
+        debugLog(workbook, `業務ID=${id}: 振替対象日判定 日付=${inputDate}, 振替=${furikae}`);
+
+        // 直前営業日の振替ロジック
+        if (furikae === "直前営業日") {
+            debugLog(workbook, `業務ID=${id}: 振替対象日判定(直前営業日)を行います`);
+
+            // 対象日の翌日から探索開始
+            const dateObj = new Date(inputDate);
+            const nextDate = new Date(dateObj);
+            nextDate.setDate(nextDate.getDate() + 1);
+
+            // 連続した非営業日を探索
+            let maxDays = 7; // 最大7日先まで探索
+            for (let i = 0; i < maxDays; i++) {
+                const checkDate = formatDate(nextDate);
+
+                // 営業日なら探索を中断
+                if (isBusinessDay(checkDate, calendar)) {
+                    break;
+                }
+
+                // この非営業日が業務条件に一致するか確認
+                const isOriginalTarget = isMatchingOriginalCondition(checkDate, freq, base, month, weekNum, youbi, nDay, calendar);
+
+                if (isOriginalTarget) {
+                    // 直前営業日が対象日と一致するか確認
+                    const prevBizDate = getPreviousBusinessDay(checkDate, calendar, workbook);
+                    if (prevBizDate === inputDate) {
+                        debugLog(workbook, `業務ID=${id}: 日付${inputDate}は${checkDate}の直前営業日振替として対象`);
+                        return true;
+                    }
+                }
+
+                // 次の日へ進む
+                nextDate.setDate(nextDate.getDate() + 1);
+            }
+        }        // 直後営業日の振替ロジック
+        else if (furikae === "直後営業日") {
+            debugLog(workbook, `業務ID=${id}: 振替対象日判定(直後営業日)を行います`);
+
+            // 対象日の前日から探索開始
+            const dateObj = new Date(inputDate);
+            const prevDate = new Date(dateObj);
+            prevDate.setDate(prevDate.getDate() - 1);
+
+            // 連続した非営業日を探索
+            let maxDays = 7; // 最大7日前まで探索
+            
+            // 週次業務の場合、前回の曜日（当該曜日）も考慮する
+            if (freq === "週次" && base === "暦日(曜日)" && youbi) {
+                const youbiIndex = ["日", "月", "火", "水", "木", "金", "土"].indexOf(youbi);
+                if (youbiIndex !== -1) {
+                    // 現在の曜日と目標曜日の差分を計算
+                    const currentDayOfWeek = dateObj.getDay(); // 0=日, 1=月, ..., 6=土
+                    let dayDiff = (currentDayOfWeek - youbiIndex + 7) % 7;
+                    if (dayDiff === 0) dayDiff = 7; // 同じ曜日なら1週間前
+                    
+                    // 前回のその曜日の日付を計算
+                    const prevYoubiDate = new Date(dateObj);
+                    prevYoubiDate.setDate(prevYoubiDate.getDate() - dayDiff);
+                    
+                    // 前回のその曜日が業務条件に一致するか確認（基本的には一致するはず）
+                    const prevYoubiDateStr = formatDate(prevYoubiDate);
+                    const isYoubiMatch = isMatchingOriginalCondition(prevYoubiDateStr, freq, base, month, weekNum, youbi, nDay, calendar);
+                    
+                    // その曜日から次の営業日が今日かチェック
+                    if (isYoubiMatch) {
+                        // その曜日自体が営業日の場合は振替不要
+                        if (!isBusinessDay(prevYoubiDateStr, calendar)) {
+                            const nextBizDate = getNextBusinessDay(prevYoubiDateStr, calendar, workbook);
+                            if (nextBizDate === inputDate) {
+                                debugLog(workbook, `業務ID=${id}: 日付${inputDate}は${prevYoubiDateStr}(${youbi})の直後営業日振替として対象`);
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 従来の探索ロジック（連続非営業日）
+            for (let i = 0; i < maxDays; i++) {
+                const checkDate = formatDate(prevDate);
+
+                // 営業日なら探索を中断
+                if (isBusinessDay(checkDate, calendar)) {
+                    break;
+                }
+
+                // この非営業日が業務条件に一致するか確認
+                const isOriginalTarget = isMatchingOriginalCondition(checkDate, freq, base, month, weekNum, youbi, nDay, calendar);
+
+                if (isOriginalTarget) {
+                    // 直後営業日が対象日と一致するか確認
+                    const nextBizDate = getNextBusinessDay(checkDate, calendar, workbook);
+                    if (nextBizDate === inputDate) {
+                        debugLog(workbook, `業務ID=${id}: 日付${inputDate}は${checkDate}の直後営業日振替として対象`);
+                        return true;
+                    }
+                }
+
+                // 前の日へ戻る
+                prevDate.setDate(prevDate.getDate() - 1);
+            }
+        }
+
+        return false;
+    } catch (e) {
+        debugLog(workbook, `振替先確認エラー: ${String(e)}`, "error");
+        return false;
     }
-    // 直後営業日の振替ロジック
-    else if (furikae === "直後営業日") {
-      debugLog(workbook, `業務ID=${id}: 振替対象日判定(直後営業日)を行います`);
-      // 前日から順に確認し、営業日または100日を超えるまでループ
-      let prevDateObj = new Date(inputDate);
-      let dayCount = 0;
-      const maxDays = 100; // 最大日数
-
-      while (dayCount < maxDays) {
-        dayCount++;
-        // 前日に移動
-        prevDateObj.setDate(prevDateObj.getDate() - 1);
-        const prevDateStr = formatDate(prevDateObj);
-
-        // 営業日なら終了（連続した非営業日ではない）
-        if (isBusinessDay(prevDateStr, calendar)) {
-          break;
-        }
-
-        // この非営業日が業務条件に一致するか確認
-        const isOriginalTargetDate = isMatchingOriginalCondition(
-          prevDateStr, freq, base, month, weekNum, youbi, nDay, calendar
-        );
-
-        // 元の日付が業務条件に一致し、その直後営業日がinputDateであれば振替対象
-        if (isOriginalTargetDate) {
-          const nextBusinessDay = getNextBusinessDay(prevDateStr, calendar, workbook);
-          if (nextBusinessDay === inputDate) {
-            debugLog(workbook, `業務ID=${id}: 日付${inputDate}は${prevDateStr}の直後営業日振替として対象`);
-            return true;
-          }
-        }
-      }
-    }
-
-    return false;
-  } catch (e) {
-    debugLog(workbook, `振替先確認エラー: ${String(e)}`, "error");
-    return false;
-  }
 }
 
 
@@ -1224,280 +1362,287 @@ function isTargetDateForFurikae(
  * @returns string - 抽出された業務IDのカンマ区切りリスト、またはエラーメッセージ
  */
 function main(workbook: ExcelScript.Workbook, targetDate: string = "", businessIds: string = "", isTest: boolean = false): string {
-  try {
-    create_debug_sheet(workbook, true);
-
-    // カレンダー情報の準備
-    const calendar = prepareCalendarMap(workbook);
-
-    // 通常の業務スケジュール生成モード
-    // 業務スケジュールシートの準備
-    let scheduleSheet = getScheduleSheet(workbook);    // 既存データの最終行と最大スケジュールIDを取得
-    const { lastRowIndex, maxScheduleId } = getExistingScheduleInfo(scheduleSheet);    // 入力日付を取得
-    let inputDateValue: string | number;
-
-    if (targetDate !== "") {
-      // 引数で指定された日付を使用
-      inputDateValue = targetDate;
-      debugLog(workbook, `引数から日付を取得: ${targetDate}`);
-
-      if (typeof targetDate === "string") {
-        // 日付形式のチェック（yyyy-MM-dd形式またはyyyy/MM/dd形式かどうか）
-        if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(targetDate)) {
-          // yyyy-MM-dd形式の場合はそのまま使用（数値変換しない）
-          inputDateValue = targetDate;
-          debugLog(workbook, `日付形式の文字列として処理: ${targetDate}`);
-        } else if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(targetDate)) {
-          // yyyy/MM/dd形式の場合はハイフン形式に変換
-          const parts: string[] = targetDate.split('/');
-          const year: string = parts[0];
-          const month: string = parts[1].padStart(2, '0');
-          const day: string = parts[2].padStart(2, '0');
-          inputDateValue = `${year}-${month}-${day}`;
-          debugLog(workbook, `スラッシュ形式の日付を変換: ${targetDate} → ${inputDateValue}`);
-        } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(targetDate)) {
-          // M/D/YYYY形式の場合はYYYY-MM-DD形式に変換
-          const parts: string[] = targetDate.split('/');
-          const month: string = parts[0].padStart(2, '0');
-          const day: string = parts[1].padStart(2, '0');
-          const year: string = parts[2];
-          inputDateValue = `${year}-${month}-${day}`;
-          debugLog(workbook, `M/D/YYYY形式の日付を変換: ${targetDate} → ${inputDateValue}`);
-        } else {
-          // それ以外の場合は数値変換を試みる
-          const numericValue = Number(targetDate);
-          if (!isNaN(numericValue)) {
-            inputDateValue = numericValue;
-            debugLog(workbook, `数値に変換: ${targetDate} → ${numericValue}`);
-          }
-        }
-      }
-
-      // B1セルにも表示
-      scheduleSheet.getRange("B1").setValue(inputDateValue);
-    } else {
-      // B1セルから日付を取得
-      const inputDateCell = scheduleSheet.getRange("B1");
-      const cellValue = inputDateCell.getValue() as string | number;
-      debugLog(workbook, `セルB1から日付を取得: ${cellValue}`);
-
-      if (!cellValue) {
-        throw new Error("B1セルに日付が入力されていません。");
-      }            // 値が数値であることを確認
-      if (typeof cellValue === "number") {
-        inputDateValue = cellValue;
-      } else {
-        // 文字列の場合の処理
-        if (typeof cellValue === "string" && /^\d{4}-\d{1,2}-\d{1,2}$/.test(cellValue)) {
-          // yyyy-MM-dd形式の場合はそのまま使用
-          inputDateValue = cellValue;
-          debugLog(workbook, `日付形式の文字列として処理: ${cellValue}`);
-        } else if (typeof cellValue === "string" && /^\d{4}\/\d{1,2}\/\d{1,2}$/.test(cellValue)) {
-          // yyyy/MM/dd形式の場合はハイフン形式に変換
-          const parts: string[] = cellValue.split('/');
-          const year: string = parts[0];
-          const month: string = parts[1].padStart(2, '0');
-          const day: string = parts[2].padStart(2, '0');
-          inputDateValue = `${year}-${month}-${day}`;
-          debugLog(workbook, `スラッシュ形式の日付を変換: ${cellValue} → ${inputDateValue}`);
-        } else if (typeof cellValue === "string" && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(cellValue)) {
-          // M/D/YYYY形式の場合はYYYY-MM-DD形式に変換
-          const parts: string[] = cellValue.split('/');
-          const month: string = parts[0].padStart(2, '0');
-          const day: string = parts[1].padStart(2, '0');
-          const year: string = parts[2];
-          inputDateValue = `${year}-${month}-${day}`;
-          debugLog(workbook, `M/D/YYYY形式の日付を変換: ${cellValue} → ${inputDateValue}`);
-        } else {
-          // その他の文字列はそのまま使用
-          inputDateValue = cellValue;
-        }
-      }
-    }
-
-    // 日付変換
-    let inputDate: string;
     try {
-      inputDate = excelDateToString(inputDateValue);
+        create_debug_sheet(workbook, true);
 
-      if (inputDate.startsWith("error:")) {
-        throw new Error(`日付変換エラー: ${inputDate}`);
-      }
-      debugLog(workbook, `日付変換後: ${inputDate}`);
-    } catch (e) {
-      debugLog(workbook, `日付変換エラー: ${e}`, "error");
-      throw new Error(`日付の変換に失敗しました: ${String(e)}`);
-    }
+        // カレンダー情報の準備
+        const calendar = prepareCalendarMap(workbook);
 
-    // D1セルのメッセージをクリア
-    scheduleSheet.getRange("D1").setValue("");
+        // 通常の業務スケジュール生成モード
+        // 業務スケジュールシートの準備
+        let scheduleSheet = getScheduleSheet(workbook);    // 既存データの最終行と最大スケジュールIDを取得
+        const { lastRowIndex, maxScheduleId } = getExistingScheduleInfo(scheduleSheet);    // 入力日付を取得
+        let inputDateValue: string | number;
 
-    // 業務一覧テーブルの取得
-    const taskSheet = workbook.getWorksheet("業務一覧");
-    if (!taskSheet) {
-      throw new Error("「業務一覧」シートが見つかりません。");
-    }
+        if (targetDate !== "") {
+            // 引数で指定された日付を使用
+            inputDateValue = targetDate;
+            debugLog(workbook, `引数から日付を取得: ${targetDate}`);
 
-    // テーブルデータの取得
-    let taskData: (string | number | boolean)[][] = [];
-    let headers: string[] = [];
+            if (typeof targetDate === "string") {
+                // 日付形式のチェック（yyyy-MM-dd形式またはyyyy/MM/dd形式かどうか）
+                if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(targetDate)) {
+                    // yyyy-MM-dd形式の場合はそのまま使用（数値変換しない）
+                    inputDateValue = targetDate;
+                    debugLog(workbook, `日付形式の文字列として処理: ${targetDate}`);
+                } else if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(targetDate)) {
+                    // yyyy/MM/dd形式の場合はハイフン形式に変換
+                    const parts: string[] = targetDate.split('/');
+                    const year: string = parts[0];
+                    const month: string = parts[1].padStart(2, '0');
+                    const day: string = parts[2].padStart(2, '0');
+                    inputDateValue = `${year}-${month}-${day}`;
+                    debugLog(workbook, `スラッシュ形式の日付を変換: ${targetDate} → ${inputDateValue}`);
+                } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(targetDate)) {
+                    // M/D/YYYY形式の場合はYYYY-MM-DD形式に変換
+                    const parts: string[] = targetDate.split('/');
+                    const month: string = parts[0].padStart(2, '0');
+                    const day: string = parts[1].padStart(2, '0');
+                    const year: string = parts[2];
+                    inputDateValue = `${year}-${month}-${day}`;
+                    debugLog(workbook, `M/D/YYYY形式の日付を変換: ${targetDate} → ${inputDateValue}`);
+                } else {
+                    // それ以外の場合は数値変換を試みる
+                    const numericValue = Number(targetDate);
+                    if (!isNaN(numericValue)) {
+                        inputDateValue = numericValue;
+                        debugLog(workbook, `数値に変換: ${targetDate} → ${numericValue}`);
+                    }
+                }
+            }
 
-    // テーブルを検索
-    const tables = taskSheet.getTables();
-    if (tables.length > 0) {
-      // テーブルからデータを取得
-      const table = tables[0];
-      debugLog(workbook, `テーブル名: ${table.getName()}`);
+            // B1セルにも表示
+            scheduleSheet.getRange("B1").setValue(inputDateValue);
+        } else {
+            // B1セルから日付を取得
+            const inputDateCell = scheduleSheet.getRange("B1");
+            const cellValue = inputDateCell.getValue() as string | number;
+            debugLog(workbook, `セルB1から日付を取得: ${cellValue}`);
 
-      try {
-        taskData = table.getRangeBetweenHeaderAndTotal().getValues();
-        headers = table.getHeaderRowRange().getValues()[0].map(v => String(v));
-        debugLog(workbook, `テーブル行数: ${taskData.length}`);
-      } catch (e) {
-        debugLog(workbook, `テーブル取得エラー: ${String(e)}`, "error");
+            if (!cellValue) {
+                throw new Error("B1セルに日付が入力されていません。");
+            }            // 値が数値であることを確認
+            if (typeof cellValue === "number") {
+                inputDateValue = cellValue;
+            } else {
+                // 文字列の場合の処理
+                if (typeof cellValue === "string" && /^\d{4}-\d{1,2}-\d{1,2}$/.test(cellValue)) {
+                    // yyyy-MM-dd形式の場合はそのまま使用
+                    inputDateValue = cellValue;
+                    debugLog(workbook, `日付形式の文字列として処理: ${cellValue}`);
+                } else if (typeof cellValue === "string" && /^\d{4}\/\d{1,2}\/\d{1,2}$/.test(cellValue)) {
+                    // yyyy/MM/dd形式の場合はハイフン形式に変換
+                    const parts: string[] = cellValue.split('/');
+                    const year: string = parts[0];
+                    const month: string = parts[1].padStart(2, '0');
+                    const day: string = parts[2].padStart(2, '0');
+                    inputDateValue = `${year}-${month}-${day}`;
+                    debugLog(workbook, `スラッシュ形式の日付を変換: ${cellValue} → ${inputDateValue}`);
+                } else if (typeof cellValue === "string" && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(cellValue)) {
+                    // M/D/YYYY形式の場合はYYYY-MM-DD形式に変換
+                    const parts: string[] = cellValue.split('/');
+                    const month: string = parts[0].padStart(2, '0');
+                    const day: string = parts[1].padStart(2, '0');
+                    const year: string = parts[2];
+                    inputDateValue = `${year}-${month}-${day}`;
+                    debugLog(workbook, `M/D/YYYY形式の日付を変換: ${cellValue} → ${inputDateValue}`);
+                } else {
+                    // その他の文字列はそのまま使用
+                    inputDateValue = cellValue;
+                }
+            }
+        }
 
-        // エラー時はシートから直接取得
-        const range = taskSheet.getUsedRange();
-        const values = range.getValues();
-        headers = values[0].map(v => String(v));
-        taskData = values.slice(1);
-      }
-    } else {
-      // テーブルがない場合はシートから直接取得
-      debugLog(workbook, "テーブルが見つからないため使用範囲からデータを取得");
-      const range = taskSheet.getUsedRange();
-      const values = range.getValues();
-      headers = values[0].map(v => String(v));
-      taskData = values.slice(1);
-    }
+        // 日付変換
+        let inputDate: string;
+        try {
+            inputDate = excelDateToString(inputDateValue);
 
-    // 業務IDが指定されている場合、該当するデータのみを抽出　(主にテストで使用する想定です)
-    if (businessIds && businessIds !== "") {
-      debugLog(workbook, `指定された業務ID: ${businessIds}`);
+            if (inputDate.startsWith("error:")) {
+                throw new Error(`日付変換エラー: ${inputDate}`);
+            }
+            debugLog(workbook, `日付変換後: ${inputDate}`);
+        } catch (e) {
+            debugLog(workbook, `日付変換エラー: ${e}`, "error");
+            throw new Error(`日付の変換に失敗しました: ${String(e)}`);
+        }
 
-      // 既存のデータをクリア(テストで使用するため)
-      if (isTest) {
-        const scheduleSheet = workbook.getWorksheet("業務スケジュール");
+        // D1セルのメッセージをクリア
+        scheduleSheet.getRange("D1").setValue("");
+
+        // 業務一覧テーブルの取得
+        const taskSheet = workbook.getWorksheet("業務一覧");
+        if (!taskSheet) {
+            throw new Error("「業務一覧」シートが見つかりません。");
+        }
+
+        // テーブルデータの取得
+        let taskData: (string | number | boolean)[][] = [];
+        let headers: string[] = [];
+
+        // テーブルを検索
+        const tables = taskSheet.getTables();
+        if (tables.length > 0) {
+            // テーブルからデータを取得
+            const table = tables[0];
+            debugLog(workbook, `テーブル名: ${table.getName()}`);
+
+            try {
+                taskData = table.getRangeBetweenHeaderAndTotal().getValues();
+                headers = table.getHeaderRowRange().getValues()[0].map(v => String(v));
+                debugLog(workbook, `テーブル行数: ${taskData.length}`);
+            } catch (e) {
+                debugLog(workbook, `テーブル取得エラー: ${String(e)}`, "error");
+
+                // エラー時はシートから直接取得
+                const range = taskSheet.getUsedRange();
+                const values = range.getValues();
+                headers = values[0].map(v => String(v));
+                taskData = values.slice(1);
+            }
+        } else {
+            // テーブルがない場合はシートから直接取得
+            debugLog(workbook, "テーブルが見つからないため使用範囲からデータを取得");
+            const range = taskSheet.getUsedRange();
+            const values = range.getValues();
+            headers = values[0].map(v => String(v));
+            taskData = values.slice(1);
+        }
+
+        // 業務IDが指定されている場合、該当するデータのみを抽出　(主にテストで使用する想定です)
+        if (businessIds && businessIds !== "") {
+            debugLog(workbook, `指定された業務ID: ${businessIds}`);
+
+            // 既存のデータをクリア(テストで使用するため)
+            if (isTest) {
+                const scheduleSheet = workbook.getWorksheet("業務スケジュール");
+                const existingRange = scheduleSheet.getUsedRange();
+                if (taskSheet && existingRange.getRowCount() > 1) {
+                    // ヘッダー行以外をクリア
+                    const dataRange = scheduleSheet.getRange(`A4:I${existingRange.getRowCount()}`);
+                    dataRange.clear();
+                }
+            }
+
+            // 業務IDに対応するカラムのインデックスを取得
+            const businessIdColumnIndex = headers.indexOf("業務ID");
+
+            if (businessIdColumnIndex >= 0) {
+                // フィルタリング：指定された業務IDに一致する業務のみを残す
+                const idList = businessIds.split(',').map(id => id.trim());
+
+                taskData = taskData.filter(row => {
+                    const businessId = String(row[businessIdColumnIndex] || "");
+                    return idList.includes(businessId);
+                });
+
+                debugLog(workbook, `フィルター適用後のデータ行数: ${taskData.length}`);
+            } else {
+                debugLog(workbook, "業務IDの列が見つかりません", "warning");
+            }
+        }
+
+        debugLog(workbook, `ヘッダー: ${headers.join(', ')}`);
+        debugLog(workbook, `データ行数: ${taskData.length}`);
+
+        // D1セルのメッセージをクリア
+        scheduleSheet.getRange("D1").setValue("");
+
+        // 既存のスケジュールデータをチェックして同日のデータがないか確認
         const existingRange = scheduleSheet.getUsedRange();
-        if (taskSheet && existingRange.getRowCount() > 1) {
-          // ヘッダー行以外をクリア
-          const dataRange = scheduleSheet.getRange(`A4:I${existingRange.getRowCount()}`);
-          dataRange.clear();
+        if (existingRange && existingRange.getRowCount() > 3) { // ヘッダー行より下にデータがある場合
+            // 予定日（C列）のデータを取得
+            const scheduleDateRange = scheduleSheet.getRange(`C4:C${existingRange.getRowCount()}`);
+            const scheduleDates = scheduleDateRange.getValues();
+
+            // 入力日付と同じ日付が存在するかチェック
+            let hasSameDate = false;
+            for (let i = 0; i < scheduleDates.length; i++) {
+                if (scheduleDates[i][0]) {
+                    const existingDateStr = excelDateToString(scheduleDates[i][0]);
+                    if (!existingDateStr.startsWith("error:") && existingDateStr === inputDate) {
+                        hasSameDate = true;
+                        break;
+                    }
+                }
+            }
+
+            // 同日のスケジュールが存在する場合
+            if (hasSameDate) {
+                scheduleSheet.getRange("D1").setValue("同日のスケジュールがあります");
+                scheduleSheet.getRange("D1").getFormat().getFont().setColor("#FF0000");
+                scheduleSheet.getRange("D1").getFormat().getFont().setBold(true);
+                debugLog(workbook, `警告: ${inputDate}のスケジュールはすでに作成済みです`, "warning");
+                return `警告: ${inputDate}のスケジュールはすでに作成済みです`;
+            }
         }
-      }
 
-      // 業務IDに対応するカラムのインデックスを取得
-      const businessIdColumnIndex = headers.indexOf("業務ID");
+        // 抽出データの出力開始行
+        let currentRow = lastRowIndex; // 既存データの次の行から
+        let scheduleId = maxScheduleId + 1;   // 次のスケジュールID
+        debugLog(workbook, `出力開始行: ${currentRow}`);
 
-      if (businessIdColumnIndex >= 0) {
-        // フィルタリング：指定された業務IDに一致する業務のみを残す
-        const idList = businessIds.split(',').map(id => id.trim());
+        // 業務ID→業務名のマッピングを取得
+        const taskNameMap = prepareTaskNameMap(workbook);
 
-        taskData = taskData.filter(row => {
-          const businessId = String(row[businessIdColumnIndex] || "");
-          return idList.includes(businessId);
-        });
+        // 該当する業務を判定して抽出
+        let matchCount = 0;
+        let extractedTasks: { id: string, date: string }[] = [];
 
-        debugLog(workbook, `フィルター適用後のデータ行数: ${taskData.length}`);
-      } else {
-        debugLog(workbook, "業務IDの列が見つかりません", "warning");
-      }
+        for (let i = 0; i < taskData.length; i++) {
+            const row = taskData[i];
+
+            // 業務IDを取得
+            const idIndex = headers.indexOf("業務ID");
+            const id = idIndex >= 0 ? String(row[idIndex] || "") : "未定義";
+
+            // 無効な業務IDはスキップ
+            if (!id || id === "undefined" || id === "null") {
+                debugLog(workbook, `警告: 業務IDなし (行 ${i + 2})`, "warning");
+                continue;
+            }
+
+            // 業務名を取得
+            const taskName = taskNameMap.get(id) || "";
+
+            // 業務判定
+            if (isTargetTask(inputDate, row, headers, calendar, workbook)) {
+                matchCount++;
+                extractedTasks.push({ id, date: inputDate });
+
+                // スケジュールシートに出力（業務名を追加）
+                scheduleSheet.getRange(`A${currentRow + matchCount - 1}:D${currentRow + matchCount - 1}`).setValues([
+                    [scheduleId, id, taskName, inputDate]
+                ]);
+
+                scheduleId++;
+            } else {
+                // 振替対象日かどうか判定
+                if (isTargetDateForFurikae(inputDate, row, headers, calendar, workbook)) {
+                    matchCount++;
+                    extractedTasks.push({ id, date: inputDate });
+                    debugLog(workbook, `業務ID=${id}: 振替対象日判定で対象になりました`);
+                    // スケジュールシートに出力（業務名を追加）
+                    scheduleSheet.getRange(`A${currentRow + matchCount - 1}:D${currentRow + matchCount - 1}`).setValues([
+                        [scheduleId, id, taskName, inputDate]
+                    ]);
+
+                    scheduleId++;
+                }
+            }
+
+
+        }    // 処理結果メッセージ
+        debugLog(workbook, `処理完了: ${matchCount}件の業務を抽出`);
+        debugLog(workbook, `抽出業務ID: ${extractedTasks.map(t => t.id).join(', ')}`);
+
+        // 抽出された業務IDのリストを返す
+        return extractedTasks.map(t => t.id).join(',');
+    } catch (error) {
+        // エラー情報を記録
+        const errorMessage = String(error);
+        const errorType = error instanceof Error ? error.name : "Unknown";    // エラー処理
+        debugLog(workbook, `エラー発生: ${String(error)}`, "error");
+        return `エラー: ${String(error)}`;
     }
-
-    debugLog(workbook, `ヘッダー: ${headers.join(', ')}`);
-    debugLog(workbook, `データ行数: ${taskData.length}`);
-
-    // D1セルのメッセージをクリア
-    scheduleSheet.getRange("D1").setValue("");
-
-    // 既存のスケジュールデータをチェックして同日のデータがないか確認
-    const existingRange = scheduleSheet.getUsedRange();
-    if (existingRange && existingRange.getRowCount() > 3) { // ヘッダー行より下にデータがある場合
-      // 予定日（C列）のデータを取得
-      const scheduleDateRange = scheduleSheet.getRange(`C4:C${existingRange.getRowCount()}`);
-      const scheduleDates = scheduleDateRange.getValues();
-
-      // 入力日付と同じ日付が存在するかチェック
-      let hasSameDate = false;
-      for (let i = 0; i < scheduleDates.length; i++) {
-        if (scheduleDates[i][0]) {
-          const existingDateStr = excelDateToString(scheduleDates[i][0]);
-          if (!existingDateStr.startsWith("error:") && existingDateStr === inputDate) {
-            hasSameDate = true;
-            break;
-          }
-        }
-      }
-
-      // 同日のスケジュールが存在する場合
-      if (hasSameDate) {
-        scheduleSheet.getRange("D1").setValue("同日のスケジュールがあります");
-        scheduleSheet.getRange("D1").getFormat().getFont().setColor("#FF0000");
-        scheduleSheet.getRange("D1").getFormat().getFont().setBold(true);
-        debugLog(workbook, `警告: ${inputDate}のスケジュールはすでに作成済みです`, "warning");
-        return `警告: ${inputDate}のスケジュールはすでに作成済みです`;
-      }
-    }
-
-    // 抽出データの出力開始行
-    let currentRow = lastRowIndex; // 既存データの次の行から
-    let scheduleId = maxScheduleId + 1;   // 次のスケジュールID
-
-    debugLog(workbook, `出力開始行: ${currentRow}`);
-
-    // 該当する業務を判定して抽出
-    let matchCount = 0;
-    let extractedTasks: { id: string, date: string }[] = [];
-
-    for (let i = 0; i < taskData.length; i++) {
-      const row = taskData[i];
-
-      // 業務IDを取得
-      const idIndex = headers.indexOf("業務ID");
-      const id = idIndex >= 0 ? String(row[idIndex] || "") : "未定義";
-
-      // 無効な業務IDはスキップ
-      if (!id || id === "undefined" || id === "null") {
-        debugLog(workbook, `警告: 業務IDなし (行 ${i + 2})`, "warning");
-        continue;
-      }
-
-      // 業務判定
-      if (isTargetTask(inputDate, row, headers, calendar, workbook)) {
-        matchCount++;
-        extractedTasks.push({ id, date: inputDate });
-
-        // スケジュールシートに出力
-        scheduleSheet.getRange(`A${currentRow + matchCount - 1}:C${currentRow + matchCount - 1}`).setValues([
-          [scheduleId, id, inputDate]
-        ]);
-
-        scheduleId++;
-      }
-
-      // 振替対象日かどうか判定
-      if (isTargetDateForFurikae(inputDate, row, headers, calendar, workbook)) {
-        matchCount++;
-        extractedTasks.push({ id, date: inputDate });
-        debugLog(workbook, `業務ID=${id}: 振替対象日判定で対象になりました`);
-        // スケジュールシートに出力
-        scheduleSheet.getRange(`A${currentRow + matchCount - 1}:C${currentRow + matchCount - 1}`).setValues([
-          [scheduleId, id, inputDate]
-        ]);
-
-        scheduleId++;
-      }
-    }    // 処理結果メッセージ
-    debugLog(workbook, `処理完了: ${matchCount}件の業務を抽出`);
-    debugLog(workbook, `抽出業務ID: ${extractedTasks.map(t => t.id).join(', ')}`);
-
-    // 抽出された業務IDのリストを返す
-    return extractedTasks.map(t => t.id).join(',');
-  } catch (error) {
-    // エラー情報を記録
-    const errorMessage = String(error);
-    const errorType = error instanceof Error ? error.name : "Unknown";    // エラー処理
-    debugLog(workbook, `エラー発生: ${String(error)}`, "error");
-    return `エラー: ${String(error)}`;
-  }
 }
