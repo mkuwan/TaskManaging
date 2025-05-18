@@ -1,6 +1,20 @@
 // Office Scripts for Excel
 // 業務スケジュール管理システム
 
+// テストケースCSVデータ
+const testCaseData = [
+    // テストID,テスト内容,入力データ,テスト対象業務ID,期待結果,判定基準
+    ["2023_01_01_A", "元日業務チェック", "2023-01-01", "1", "対象", "毎日業務は休日も実行される"],
+    ["2023_01_01_B", "元日業務チェック", "2023-01-01", "9", "対象", "毎週日曜業務として実行"],
+    ["2023_01_01_C", "元日業務チェック", "2023-01-01", "56", "対象", "1月1日の年次業務として実行"]
+];
+
+/**
+ * テストデータを使用するか否か
+ */
+const isUseLocalTestData: boolean = true;
+
+
 // 型定義
 /**
  * カレンダー情報を保持する型
@@ -1354,14 +1368,7 @@ function isTargetDateForFurikae(
 
 
 
-/**
- * メイン処理: スケジュール生成
- * @param workbook - Excelワークブック
- * @param targetDate - 処理対象日付（日付文字列または数値のExcelシリアル値、省略可）
- * @param businessIds - 業務IDのカンマ区切りリスト（テスト用）
- * @returns string - 抽出された業務IDのカンマ区切りリスト、またはエラーメッセージ
- */
-function main(workbook: ExcelScript.Workbook, targetDate: string = "", businessIds: string = "", isTest: boolean = false): string {
+function execute(workbook: ExcelScript.Workbook, targetDate: string = "", businessIds: string = "", isTest: boolean = false): string {
     try {
         create_debug_sheet(workbook, true);
 
@@ -1518,9 +1525,11 @@ function main(workbook: ExcelScript.Workbook, targetDate: string = "", businessI
                 const scheduleSheet = workbook.getWorksheet("業務スケジュール");
                 const existingRange = scheduleSheet.getUsedRange();
                 if (taskSheet && existingRange.getRowCount() > 1) {
-                    // ヘッダー行以外をクリア
                     const dataRange = scheduleSheet.getRange(`A4:I${existingRange.getRowCount()}`);
-                    dataRange.clear();
+                    // ヘッダー行以外を削除　下のセルが上にシフトするよう指定
+                    dataRange.delete(ExcelScript.DeleteShiftDirection.up);
+                    // ヘッダー行以外をクリア
+                    // dataRange.clear();
                 }
             }
 
@@ -1644,5 +1653,25 @@ function main(workbook: ExcelScript.Workbook, targetDate: string = "", businessI
         const errorType = error instanceof Error ? error.name : "Unknown";    // エラー処理
         debugLog(workbook, `エラー発生: ${String(error)}`, "error");
         return `エラー: ${String(error)}`;
+    }
+}
+
+
+
+
+/**
+ * メイン処理: スケジュール生成
+ * @param workbook - Excelワークブック
+ * @param targetDate - 処理対象日付（日付文字列または数値のExcelシリアル値、省略可）
+ * @param businessIds - 業務IDのカンマ区切りリスト（テスト用）
+ * @returns string - 抽出された業務IDのカンマ区切りリスト、またはエラーメッセージ
+ */
+function main(workbook: ExcelScript.Workbook, targetDate: string = "", businessIds: string = "", isTest: boolean = false): string {
+    if (isUseLocalTestData) {        // テストケースデータをループして各ケースでexecuteを呼び出す
+        for (const testCase of testCaseData) {
+            const result = execute(workbook, testCase[2], testCase[3], true);
+        }
+    } else {
+        return execute(workbook, targetDate, businessIds, isTest);
     }
 }
