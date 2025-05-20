@@ -9,11 +9,6 @@ const testCaseData = [
     ["2023_01_01_C", "元日業務チェック", "2023-01-01", "56", "対象", "1月1日の年次業務として実行"]
 ];
 
-/**
- * テストデータを使用するか否か
- */
-const isUseLocalTestData: boolean = true;
-
 
 // 型定義
 /**
@@ -623,15 +618,81 @@ function isDailyTask(inputDate: string, base: string, calendar: CalendarInfo): b
  * @param inputDate - 対象日付（YYYY-MM-DD形式）
  * @param base - 基準（"暦日(曜日)"）
  * @param youbi - 曜日指定（"月"/"火"など）
+ * @param furikae - 振替規則（"直前営業日"/"直後営業日"/"振替しない"）
+ * @param calendar - カレンダー情報
+ * @param workbook - ExcelScript.Workbook
  * @returns boolean - 実行対象の場合true
  */
-function isWeeklyTask(inputDate: string, base: string, youbi: string): boolean {
+function isWeeklyTask(inputDate: string, base: string, youbi: string, furikae: string = "", calendar: CalendarInfo = null, workbook: ExcelScript.Workbook = null): boolean {
     if (base !== "暦日(曜日)" || !youbi) return false;
 
     const date = new Date(inputDate);
     const dayOfWeek = ["日", "月", "火", "水", "木", "金", "土"][date.getDay()];
+    const dateInfo = getDateInfo(inputDate, calendar);
 
-    return dayOfWeek === youbi;
+    // 曜日が一致する場合
+    if (dayOfWeek === youbi) {
+        // 振替規則がない場合、または営業日の場合、または振替しない設定の場合は対象
+        if (!furikae || furikae === "振替しない" || dateInfo.isBusinessDay) {
+            return true;
+        }
+
+        // 非営業日で振替規則がある場合は実行対象外
+        if (!dateInfo.isBusinessDay && (furikae === "直前営業日" || furikae === "直後営業日")) {
+            if (workbook) {
+                debugLog(workbook, `週次業務: 日付${inputDate}は${youbi}曜日に一致するが非営業日のため振替対象`);
+            }
+            return false;
+        }
+    }
+
+    // 曜日が一致せず、振替規則もない場合は対象外
+    if (dayOfWeek !== youbi && (!furikae || furikae === "振替しない")) {
+        return false;
+    }
+
+    // 以下は振替規則がある場合の処理
+    if (!calendar || !workbook) {
+        return false; // カレンダー情報がない場合は振替判定できないのでfalse
+    }
+
+    // 直前営業日の振替ルールがある場合
+    if (furikae === "直前営業日" && dateInfo.isBusinessDay) {
+        // 翌日が対象の曜日かつ非営業日かチェック
+        const nextDay = new Date(date);
+        nextDay.setDate(nextDay.getDate() + 1);
+        const nextDayStr = formatDate(nextDay);
+        const nextDayOfWeek = ["日", "月", "火", "水", "木", "金", "土"][nextDay.getDay()];
+
+        // 翌日が対象曜日で非営業日の場合
+        if (nextDayOfWeek === youbi && !isBusinessDay(nextDayStr, calendar)) {
+            debugLog(workbook, `週次業務: 日付${inputDate}は${nextDayStr}(${youbi})の直前営業日振替として対象`);
+            return true;
+        }
+    }
+
+    // 直後営業日の振替ルールがある場合
+    if (furikae === "直後営業日" && dateInfo.isBusinessDay) {
+        // 対象曜日の日付を特定（当週の）
+        const weekStartDay = new Date(date);
+        weekStartDay.setDate(weekStartDay.getDate() - weekStartDay.getDay()); // 日曜日に移動
+
+        const targetDayOfWeekIndex = ["日", "月", "火", "水", "木", "金", "土"].indexOf(youbi);
+        const targetDate = new Date(weekStartDay);
+        targetDate.setDate(targetDate.getDate() + targetDayOfWeekIndex);
+
+        // 対象曜日が非営業日かつ現在日が直後営業日か確認
+        const targetDateStr = formatDate(targetDate);
+        if (!isBusinessDay(targetDateStr, calendar)) {
+            const nextBusinessDayAfterTarget = getNextBusinessDay(targetDateStr, calendar, workbook);
+            if (nextBusinessDayAfterTarget === inputDate) {
+                debugLog(workbook, `週次業務: 日付${inputDate}は${targetDateStr}(${youbi})の直後営業日振替として対象`);
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -646,26 +707,36 @@ function isWeeklyTask(inputDate: string, base: string, youbi: string): boolean {
 function isCalendarDayNthTask(inputDate: string, n: number, furikae: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean {
     const dateInfo = getDateInfo(inputDate, calendar);
 
-    // 当日が指定された日と一致するか確認
-    // 日だけではなく、「当月の指定された日」であることを確認
-    if (dateInfo.day === n) {
-        debugLog(workbook, `日付${inputDate}は${dateInfo.month}月${n}日に一致`);
-        return true;
-    }
+    // 本来の日付を生成（当月のn日）
+    const targetDate = formatDate(new Date(dateInfo.year, dateInfo.month - 1, n));
 
     // 振替規則がある場合の処理
     if (furikae && (furikae === "直前営業日" || furikae === "直後営業日")) {
-        // 本来の日付を生成（当月のn日）
-        const targetDate = formatDate(new Date(dateInfo.year, dateInfo.month - 1, n));
-
-        // 本来の日付が非営業日で、かつ振替後が対象日と一致
+        // 本来の日付が非営業日かどうか確認
         if (!isBusinessDay(targetDate, calendar)) {
+            // 非営業日の場合、振替規則を適用
             const shiftedDate = applyFurikaeRule(targetDate, furikae, calendar, workbook);
+
+            // 振替後の日付が対象日と一致するかどうか確認
             if (shiftedDate === inputDate) {
                 debugLog(workbook, `日付${inputDate}は${dateInfo.month}月${n}日の振替日に一致`);
                 return true;
             }
+
+            // 本来の日付が非営業日で、振替規則がある場合は、本来の日付での実行は対象外
+            if (targetDate === inputDate) {
+                debugLog(workbook, `日付${inputDate}は${dateInfo.month}月${n}日と一致するが非営業日のため振替対象`);
+                return false;
+            }
         }
+    }
+
+    // 当日が指定された日と一致するか確認（振替対象でない場合）
+    // 日だけではなく、「当月の指定された日」であることを確認
+    if (dateInfo.day === n) {
+        // 振替規則があり、当日が非営業日の場合は既に上の処理で判定されているので、
+        // ここで一致した場合は、営業日であるか、振替規則がない場合        debugLog(workbook, `日付${inputDate}は${dateInfo.month}月${n}日に一致`);
+        return true;
     }
 
     return false;
@@ -692,20 +763,20 @@ function isCalendarDayEndOfMonthTask(inputDate: string, n: number, furikae: stri
     // 指定日と一致
     if (dateInfo.day === targetDay) {
         debugLog(workbook, `日付${inputDate}は${dateInfo.month}月の月末から${n}日前(${targetDay}日)に一致`);
-        
+
         // 非営業日の場合は対象外とする
         if (!dateInfo.isBusinessDay) {
             debugLog(workbook, `日付${inputDate}は非営業日のため対象外`, "info");
             return false;
         }
-        
+
         return true;
     }
 
     // 振替規則がある場合の処理
     if (furikae && (furikae === "直前営業日" || furikae === "直後営業日")) {
         // 本来の日付
-        const targetDate = formatDate(new Date(dateInfo.year, dateInfo.month - 1, targetDay));        
+        const targetDate = formatDate(new Date(dateInfo.year, dateInfo.month - 1, targetDay));
         // 本来の日付が非営業日で、かつ振替後が対象日と一致
         if (!isBusinessDay(targetDate, calendar)) {
             const shiftedDate = applyFurikaeRule(targetDate, furikae, calendar, workbook);
@@ -793,11 +864,6 @@ function isCalendarDayWeekDayTask(inputDate: string, youbi: string, weekNum: num
         return false; // この月にその曜日が存在しない
     }
 
-    // 指定日と一致
-    if (dateInfo.day === targetDay) {
-        debugLog(workbook, `日付${inputDate}は${dateInfo.month}月の第${weekNum}${youbi}曜日に一致`);
-        return true;
-    }
 
     // 振替規則がある場合の処理
     if (furikae && (furikae === "直前営業日" || furikae === "直後営業日")) {
@@ -812,6 +878,12 @@ function isCalendarDayWeekDayTask(inputDate: string, youbi: string, weekNum: num
                 debugLog(workbook, `日付${inputDate}は${dateInfo.month}月の第${weekNum}${youbi}曜日(${targetDate})の振替日として一致`);
                 return true;
             }
+        }
+    } else {
+        // 指定日と一致
+        if (dateInfo.day === targetDay) {
+            debugLog(workbook, `日付${inputDate}は${dateInfo.month}月の第${weekNum}${youbi}曜日に一致`);
+            return true;
         }
     }
 
@@ -915,11 +987,9 @@ function isTargetTask(
             const result = isDailyTask(inputDate, base, calendar);
             debugLog(workbook, `業務ID=${id}: 日次判定結果=${result}`);
             return result;
-        }
-
-        // ======== 週次業務 ========
+        }        // ======== 週次業務 ========
         if (freq === "週次") {
-            const result = isWeeklyTask(inputDate, base, youbi);
+            const result = isWeeklyTask(inputDate, base, youbi, furikae, calendar, workbook);
             debugLog(workbook, `業務ID=${id}: 週次判定結果=${result}`);
             return result;
         }
@@ -1297,69 +1367,46 @@ function isTargetDateForFurikae(
             // 対象日の前日から探索開始
             const dateObj = new Date(inputDate);
             const prevDate = new Date(dateObj);
-            prevDate.setDate(prevDate.getDate() - 1);
+            prevDate.setDate(prevDate.getDate() - 1);            // 連続した非営業日を探索
+            let maxDays = 14; // 最大14日前まで探索
 
-            // 連続した非営業日を探索
-            let maxDays = 7; // 最大7日前まで探索
-            
-            // 週次業務の場合、前回の曜日（当該曜日）も考慮する
+            // 週次業務の場合、曜日を考慮して判定する
+            let skipExploration = false;
             if (freq === "週次" && base === "暦日(曜日)" && youbi) {
-                const youbiIndex = ["日", "月", "火", "水", "木", "金", "土"].indexOf(youbi);
-                if (youbiIndex !== -1) {
-                    // 現在の曜日と目標曜日の差分を計算
-                    const currentDayOfWeek = dateObj.getDay(); // 0=日, 1=月, ..., 6=土
-                    let dayDiff = (currentDayOfWeek - youbiIndex + 7) % 7;
-                    if (dayDiff === 0) dayDiff = 7; // 同じ曜日なら1週間前
-                    
-                    // 前回のその曜日の日付を計算
-                    const prevYoubiDate = new Date(dateObj);
-                    prevYoubiDate.setDate(prevYoubiDate.getDate() - dayDiff);
-                    
-                    // 前回のその曜日が業務条件に一致するか確認（基本的には一致するはず）
-                    const prevYoubiDateStr = formatDate(prevYoubiDate);
-                    const isYoubiMatch = isMatchingOriginalCondition(prevYoubiDateStr, freq, base, month, weekNum, youbi, nDay, calendar);
-                    
-                    // その曜日から次の営業日が今日かチェック
-                    if (isYoubiMatch) {
-                        // その曜日自体が営業日の場合は振替不要
-                        if (!isBusinessDay(prevYoubiDateStr, calendar)) {
-                            const nextBizDate = getNextBusinessDay(prevYoubiDateStr, calendar, workbook);
-                            if (nextBizDate === inputDate) {
-                                debugLog(workbook, `業務ID=${id}: 日付${inputDate}は${prevYoubiDateStr}(${youbi})の直後営業日振替として対象`);
-                                return true;
-                            }
+                // isWeeklyTask関数にすでに振替ロジックを実装したため、
+                // ここではダブルチェックを防ぐため処理をスキップする
+                skipExploration = true;
+            }
+
+            // 従来の探索ロジック（連続非営業日）- 週次業務で振替ロジック済みの場合はスキップ
+            if (!skipExploration) {
+                for (let i = 0; i < maxDays; i++) {
+                    const checkDate = formatDate(prevDate);
+
+                    // 営業日なら探索を中断
+                    if (isBusinessDay(checkDate, calendar)) {
+                        break;
+                    }
+
+                    // この非営業日が業務条件に一致するか確認
+                    const isOriginalTarget = isMatchingOriginalCondition(checkDate, freq, base, month, weekNum, youbi, nDay, calendar);
+
+                    if (isOriginalTarget) {
+                        // 直後営業日が対象日と一致するか確認
+                        const nextBizDate = getNextBusinessDay(checkDate, calendar, workbook);
+                        if (nextBizDate === inputDate) {
+                            debugLog(workbook, `業務ID=${id}: 日付${inputDate}は${checkDate}の直後営業日振替として対象`);
+                            return true;
                         }
                     }
+
+                    // 前の日へ戻る
+                    prevDate.setDate(prevDate.getDate() - 1);
                 }
             }
 
-            // 従来の探索ロジック（連続非営業日）
-            for (let i = 0; i < maxDays; i++) {
-                const checkDate = formatDate(prevDate);
-
-                // 営業日なら探索を中断
-                if (isBusinessDay(checkDate, calendar)) {
-                    break;
-                }
-
-                // この非営業日が業務条件に一致するか確認
-                const isOriginalTarget = isMatchingOriginalCondition(checkDate, freq, base, month, weekNum, youbi, nDay, calendar);
-
-                if (isOriginalTarget) {
-                    // 直後営業日が対象日と一致するか確認
-                    const nextBizDate = getNextBusinessDay(checkDate, calendar, workbook);
-                    if (nextBizDate === inputDate) {
-                        debugLog(workbook, `業務ID=${id}: 日付${inputDate}は${checkDate}の直後営業日振替として対象`);
-                        return true;
-                    }
-                }
-
-                // 前の日へ戻る
-                prevDate.setDate(prevDate.getDate() - 1);
-            }
+            return false;
         }
-
-        return false;
     } catch (e) {
         debugLog(workbook, `振替先確認エラー: ${String(e)}`, "error");
         return false;
@@ -1368,13 +1415,8 @@ function isTargetDateForFurikae(
 
 
 
-function execute(workbook: ExcelScript.Workbook, targetDate: string = "", businessIds: string = "", isTest: boolean = false): string {
+function execute(workbook: ExcelScript.Workbook, targetDate: string = "", businessIds: string = "", calendar: CalendarInfo): string {
     try {
-        create_debug_sheet(workbook, true);
-
-        // カレンダー情報の準備
-        const calendar = prepareCalendarMap(workbook);
-
         // 通常の業務スケジュール生成モード
         // 業務スケジュールシートの準備
         let scheduleSheet = getScheduleSheet(workbook);    // 既存データの最終行と最大スケジュールIDを取得
@@ -1520,19 +1562,6 @@ function execute(workbook: ExcelScript.Workbook, targetDate: string = "", busine
         if (businessIds && businessIds !== "") {
             debugLog(workbook, `指定された業務ID: ${businessIds}`);
 
-            // 既存のデータをクリア(テストで使用するため)
-            if (isTest) {
-                const scheduleSheet = workbook.getWorksheet("業務スケジュール");
-                const existingRange = scheduleSheet.getUsedRange();
-                if (taskSheet && existingRange.getRowCount() > 1) {
-                    const dataRange = scheduleSheet.getRange(`A4:I${existingRange.getRowCount()}`);
-                    // ヘッダー行以外を削除　下のセルが上にシフトするよう指定
-                    dataRange.delete(ExcelScript.DeleteShiftDirection.up);
-                    // ヘッダー行以外をクリア
-                    // dataRange.clear();
-                }
-            }
-
             // 業務IDに対応するカラムのインデックスを取得
             const businessIdColumnIndex = headers.indexOf("業務ID");
 
@@ -1666,12 +1695,20 @@ function execute(workbook: ExcelScript.Workbook, targetDate: string = "", busine
  * @param businessIds - 業務IDのカンマ区切りリスト（テスト用）
  * @returns string - 抽出された業務IDのカンマ区切りリスト、またはエラーメッセージ
  */
-function main(workbook: ExcelScript.Workbook, targetDate: string = "", businessIds: string = "", isTest: boolean = false): string {
-    if (isUseLocalTestData) {        // テストケースデータをループして各ケースでexecuteを呼び出す
+function main(workbook: ExcelScript.Workbook, targetDate: string = "", businessIds: string = "", isLocalTest: boolean = false): string {
+    create_debug_sheet(workbook, true);
+
+    // カレンダー情報の準備
+    console.log("カレンダー情報の準備");
+    const calendar = prepareCalendarMap(workbook);
+
+    if (isLocalTest) {
+        // テストケースデータをループして各ケースでexecuteを呼び出す
         for (const testCase of testCaseData) {
-            const result = execute(workbook, testCase[2], testCase[3], true);
+            execute(workbook, testCase[2], testCase[3], calendar);
         }
+
     } else {
-        return execute(workbook, targetDate, businessIds, isTest);
+        return execute(workbook, targetDate, businessIds, calendar);
     }
 }

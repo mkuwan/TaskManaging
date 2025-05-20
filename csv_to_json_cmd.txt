@@ -1,0 +1,16 @@
+// 以下をPowerShellで実行するとテストケース.csvから2023.jsonを作成します。
+
+$csvContent = Import-Csv -Path "n:\TaskManaging\テストケース.csv" -Encoding Default;
+$jsonArray = @();
+foreach ($row in $csvContent) {
+    $jsonArray += , @(
+        $row.テストID,
+        $row.テスト内容,
+        $row.入力データ,
+        $row.テスト対象業務ID,
+        $row.期待結果,
+        $row.判定基準
+    )
+}
+$jsonArray | ConvertTo-Json -Depth 10 | Set-Content -Path "n:\TaskManaging\2023.json" -Encoding UTF8
+Write-Host "2023.jsonファイルが正しい形式で作成されました"
