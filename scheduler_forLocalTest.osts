@@ -976,7 +976,6 @@ const testCaseData = [
 
 
 
-
 // 型定義
 /**
  * カレンダー情報を保持する型
@@ -1198,6 +1197,7 @@ function getNthDayOfWeekInMonth(year: number, month: number, dayOfWeek: number, 
  */
 function getNthBusinessDayOfMonth(year: number, month: number, n: number, calendar: CalendarInfo, workbook: ExcelScript.Workbook): string {
     try {
+        debugLog(workbook, `メソッド=getNthBusinessDayOfMonth, year=${year},month=${month},n=${n},`, "info");
         if (n <= 0) return "";
 
         // 月の初日と末日
@@ -1243,6 +1243,7 @@ function getNthBusinessDayOfMonth(year: number, month: number, n: number, calend
  */
 function getReverseNthBusinessDayOfMonth(year: number, month: number, n: number, calendar: CalendarInfo, workbook: ExcelScript.Workbook): string {
     try {
+        debugLog(workbook, `メソッド=getReverseNthBusinessDayOfMonth, month=${month}, n=${n},`, "info");
         if (n < 0) return "";
 
         // 月の初日と末日
@@ -1285,6 +1286,7 @@ function getReverseNthBusinessDayOfMonth(year: number, month: number, n: number,
  * @returns string - 振替後の日付（YYYY-MM-DD形式）
  */
 function applyFurikaeRule(inputDate: string, rule: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): string {
+    debugLog(workbook, `メソッド=applyFurikaeRule, inputDate=${inputDate}, rule=${rule},`, "info");
     // 既に営業日の場合や振替しない場合は元の日付
     if (isBusinessDay(inputDate, calendar) || !rule || rule === "振替しない") {
         return inputDate;
@@ -1485,6 +1487,7 @@ function prepareTaskNameMap(workbook: ExcelScript.Workbook): Map<string, string>
  */
 function getPreviousBusinessDay(inputDate: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): string {
     try {
+        debugLog(workbook, `メソッド=getPreviousBusinessDay, inputDate=${inputDate}`, "info");
         // 日付オブジェクトに変換
         const baseDate = new Date(inputDate);
         if (isNaN(baseDate.getTime())) {
@@ -1526,6 +1529,7 @@ function getPreviousBusinessDay(inputDate: string, calendar: CalendarInfo, workb
  */
 function getNextBusinessDay(inputDate: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): string {
     try {
+        debugLog(workbook, `メソッド=getNextBusinessDay, inputDate=${inputDate}`, "info");
         // 日付オブジェクトに変換
         const baseDate = new Date(inputDate);
         if (isNaN(baseDate.getTime())) {
@@ -1563,11 +1567,17 @@ function getNextBusinessDay(inputDate: string, calendar: CalendarInfo, workbook:
  * @param inputDate - 対象日付（YYYY-MM-DD形式）
  * @param base - 基準（"暦日"/"営業日"）
  * @param calendar - カレンダー情報
+ * @param furikae - 振替規則（"直前営業日"/"直後営業日"/"振替しない"）
  * @returns boolean - 実行対象の場合true
  */
-function isDailyTask(inputDate: string, base: string, calendar: CalendarInfo): boolean {
-    // 暦日の場合は毎日実行
+function isDailyTask(inputDate: string, base: string, calendar: CalendarInfo, furikae: string = ""): boolean {
+    // 暦日の場合
     if (!base || base === "" || base === "暦日") {
+        // 非営業日で振替規則がある場合は対象外
+        if (!isBusinessDay(inputDate, calendar) &&
+            (furikae === "直前営業日" || furikae === "直後営業日")) {
+            return false;
+        }
         return true;
     }
 
@@ -1591,6 +1601,7 @@ function isDailyTask(inputDate: string, base: string, calendar: CalendarInfo): b
  * @returns boolean - 実行対象の場合true
  */
 function isWeeklyTask(inputDate: string, base: string, youbi: string, furikae: string = "", calendar: CalendarInfo = null, workbook: ExcelScript.Workbook = null): boolean {
+    debugLog(workbook, `メソッド=isWeeklyTask, inputDate=${inputDate}, base=${base}, youbi=${youbi}, furikae=${furikae}`, "info");
     if (base !== "暦日(曜日)" || !youbi) return false;
 
     const date = new Date(inputDate);
@@ -1673,6 +1684,7 @@ function isWeeklyTask(inputDate: string, base: string, youbi: string, furikae: s
  */
 function isCalendarDayNthTask(inputDate: string, n: number, furikae: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean {
     const dateInfo = getDateInfo(inputDate, calendar);
+    debugLog(workbook, `メソッド=isCalendarDayNthTask, n=${n}, furikae=${furikae}`, "info");
 
     // 本来の日付を生成（当月のn日）
     const targetDate = formatDate(new Date(dateInfo.year, dateInfo.month - 1, n));
@@ -1719,6 +1731,8 @@ function isCalendarDayNthTask(inputDate: string, n: number, furikae: string, cal
  * @returns boolean - 実行対象の場合true
  */
 function isCalendarDayEndOfMonthTask(inputDate: string, n: number, furikae: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean {
+    debugLog(workbook, `メソッド=isCalendarDayEndOfMonthTask, n=${n}, furikae=${furikae}`, "info");
+
     const dateInfo = getDateInfo(inputDate, calendar);
 
     // 月末日
@@ -1766,6 +1780,8 @@ function isCalendarDayEndOfMonthTask(inputDate: string, n: number, furikae: stri
  * @returns boolean - 実行対象の場合true
  */
 function isBusinessDayNthTask(inputDate: string, n: number, calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean {
+    debugLog(workbook, `メソッド=isCalendarDayEndOfMonthTask, n=${n}`, "info");
+
     // 非営業日は対象外
     if (!isBusinessDay(inputDate, calendar)) return false;
 
@@ -1790,6 +1806,7 @@ function isBusinessDayNthTask(inputDate: string, n: number, calendar: CalendarIn
  * @returns boolean - 実行対象の場合true
  */
 function isBusinessDayEndOfMonthTask(inputDate: string, n: number, calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean {
+    debugLog(workbook, `メソッド=isBusinessDayEndOfMonthTask, inputDate=${inputDate}, n=${n}`, "info");
     // 非営業日は対象外
     if (!isBusinessDay(inputDate, calendar)) return false;
 
@@ -1816,6 +1833,8 @@ function isBusinessDayEndOfMonthTask(inputDate: string, n: number, calendar: Cal
  * @returns boolean - 実行対象の場合true
  */
 function isCalendarDayWeekDayTask(inputDate: string, youbi: string, weekNum: number, furikae: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean {
+    debugLog(workbook, `メソッド=isCalendarDayWeekDayTask, inputDate=${inputDate}, youbi=${youbi}, weekNum=${weekNum}, furikae=${furikae}`, "info");
+
     if (!youbi || !weekNum) return false;
 
     const dateInfo = getDateInfo(inputDate, calendar);
@@ -1873,6 +1892,7 @@ function isTargetTask(
     calendar: CalendarInfo,
     workbook: ExcelScript.Workbook
 ): boolean {
+    debugLog(workbook, `メソッド=isTargetTask, inputDate=${inputDate}, taskData=${taskData}`, "info");
     try {
         // 業務ID
         const idIdx = headers.indexOf("業務ID");
@@ -1947,14 +1967,12 @@ function isTargetTask(
                 debugLog(workbook, `業務ID=${id}: 月不一致のため対象外 (設定月=${month}, 当月=${dateInfo.month})`, "info");
                 return false;
             }
-        }
-
-        // ======== 日次業務 ========
+        }        // ======== 日次業務 ========
         if (freq === "日次") {
-            const result = isDailyTask(inputDate, base, calendar);
-            debugLog(workbook, `業務ID=${id}: 日次判定結果=${result}`);
+            const result = isDailyTask(inputDate, base, calendar, furikae);
+            debugLog(workbook, `業務ID=${id}: 日次判定結果=${result}, 振替規則=${furikae}`);
             return result;
-        }        // ======== 週次業務 ========
+        }// ======== 週次業務 ========
         if (freq === "週次") {
             const result = isWeeklyTask(inputDate, base, youbi, furikae, calendar, workbook);
             debugLog(workbook, `業務ID=${id}: 週次判定結果=${result}`);
@@ -2052,7 +2070,8 @@ function isTargetTask(
  * 入力日付もこのスケジュールシートに作成します
  * 既存データがある場合は消去せず、その次の行から追加します
  */
-function getScheduleSheet(workbook: ExcelScript.Workbook) {  // 業務スケジュールシートの準備
+function getScheduleSheet(workbook: ExcelScript.Workbook) {  
+    // 業務スケジュールシートの準備
     let scheduleSheet = workbook.getWorksheet("業務スケジュール");
     if (!scheduleSheet) {
         debugLog(workbook, "業務スケジュールシートを新規作成");
@@ -2245,6 +2264,7 @@ function isTargetDateForFurikae(
     workbook: ExcelScript.Workbook
 ): boolean {
     try {
+        debugLog(workbook, `メソッド=isTargetDateForFurikae, inputDate=${inputDate}, taskData=${taskData}`, "info");
         // 対象日が営業日でなければ振替先にはならない
         if (!isBusinessDay(inputDate, calendar)) {
             return false;
@@ -2291,9 +2311,7 @@ function isTargetDateForFurikae(
         const weekNum = weekNumValue !== "" ? Number(weekNumValue) : null;
 
         // デバッグ出力
-        debugLog(workbook, `業務ID=${id}: 振替対象日判定 日付=${inputDate}, 振替=${furikae}`);
-
-        // 直前営業日の振替ロジック
+        debugLog(workbook, `業務ID=${id}: 振替対象日判定 日付=${inputDate}, 振替=${furikae}`);        // 直前営業日の振替ロジック
         if (furikae === "直前営業日") {
             debugLog(workbook, `業務ID=${id}: 振替対象日判定(直前営業日)を行います`);
 
