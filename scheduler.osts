@@ -898,6 +898,12 @@ function isCalendarDayWeekDayTask(inputDate: string, youbi: string, weekNum: num
                 debugLog(workbook, `日付${inputDate}は${dateInfo.month}月の第${weekNum}${youbi}曜日(${targetDate})の振替日として一致`);
                 return true;
             }
+        } else {
+            // 指定日と一致
+            if (dateInfo.day === targetDay) {
+                debugLog(workbook, `日付${inputDate}は${dateInfo.month}月の第${weekNum}${youbi}曜日に一致`);
+                return true;
+            }
         }
     } else {
         // 指定日と一致
