@@ -470,20 +470,20 @@ type CalendarInfo = { [date: string]: boolean };
  * 営業日情報を表す型
  */
 type BusinessDayInfo = {
-  nth: number;      // 月内での営業日番号（1始まり）
-  total: number;    // 月内の営業日総数
-  reverse: number;  // 月末から数えた営業日番号（最終営業日=0）
+    nth: number;      // 月内での営業日番号（1始まり）
+    total: number;    // 月内の営業日総数
+    reverse: number;  // 月末から数えた営業日番号（最終営業日=0）
 };
 
 /**
  * 日付情報を表す型
  */
 type DateInfo = {
-  year: number;     // 年
-  month: number;    // 月（1-12）
-  day: number;      // 日
-  dayOfWeek: number; // 曜日（0:日, 1:月, ..., 6:土）
-  isBusinessDay: boolean; // 営業日かどうか
+    year: number;     // 年
+    month: number;    // 月（1-12）
+    day: number;      // 日
+    dayOfWeek: number; // 曜日（0:日, 1:月, ..., 6:土）
+    isBusinessDay: boolean; // 営業日かどうか
 };
 ```
 
@@ -493,7 +493,7 @@ type DateInfo = {
 
 ### メイン関数
 
-- `main(workbook: ExcelScript.Workbook, targetDate: string = "")`: スクリプトのエントリーポイント。業務スケジュールの生成を実行します。
+- `main(workbook: ExcelScript.Workbook, targetDate: string = "", businessIds: string = "", isLocalTest: boolean = false): string`: スクリプトのエントリーポイント。業務スケジュールの生成を実行します。targetDateが指定されない場合はB1セルから日付を取得します。businessIdsが指定された場合は、指定された業務IDのみを処理対象とします。isLocalTestがtrueの場合はテストケースデータを使用した検証を行います。
 
 ### 日付処理関数
 
@@ -514,26 +514,32 @@ type DateInfo = {
 ### 業務条件判定関数
 
 - `isTargetTask(inputDate: string, taskData: (string | number | boolean)[], headers: string[], calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean`: 指定された業務が対象日に実行すべきかを判定します。
-- `isDailyTask(inputDate: string, base: string, calendar: CalendarInfo): boolean`: 日次業務の判定を行います。
-- `isWeeklyTask(inputDate: string, base: string, youbi: string): boolean`: 週次業務の判定を行います。
+- `isDailyTask(inputDate: string, base: string, calendar: CalendarInfo, furikae: string): boolean`: 日次業務の判定を行います。
+- `isWeeklyTask(inputDate: string, base: string, youbi: string, furikae: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean`: 週次業務の判定を行います。
 - `isCalendarDayNthTask(inputDate: string, n: number, furikae: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean`: 暦日(n日指定)の判定を行います。
 - `isCalendarDayEndOfMonthTask(inputDate: string, n: number, furikae: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean`: 暦日(月末逆算)の判定を行います。
 - `isBusinessDayNthTask(inputDate: string, n: number, calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean`: 営業日(n日指定)の判定を行います。
 - `isBusinessDayEndOfMonthTask(inputDate: string, n: number, calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean`: 営業日(月末逆算)の判定を行います。
 - `isCalendarDayWeekDayTask(inputDate: string, youbi: string, weekNum: number, furikae: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean`: 暦日(曜日)の判定を行います。
+- `isMatchingOriginalCondition(dateStr: string, freq: string, base: string, month: number | null, weekNum: number | null, youbi: string, nDay: number | null, calendar: CalendarInfo): boolean`: 業務の基本条件が特定の日付に一致するかをチェックします。
+- `isTargetDateForFurikae(inputDate: string, taskData: (string | number | boolean)[], headers: string[], calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean`: 指定日が他の日付の振替先になっているかをチェックします。
 
 ### 振替規則処理関数
 
-- `applyFurikaeRule(inputDate: string, rule: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): string`: 振替規則を適用して日付を計算します。
-- `isTargetDateForFurikae(inputDate: string, taskData: (string | number | boolean)[], headers: string[], calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean`: 指定日が他の日付の振替先になっているかを判定します。
+- `applyFurikaeRule(inputDate: string, rule: string, calendar: CalendarInfo, workbook: ExcelScript.Workbook): string`: 振替規則を適用して日付を計算します。指定された振替規則（"直前営業日"、"直後営業日"、"振替しない"）に従って、対象日が非営業日の場合に適切な営業日への振替を行います。
+- `isTargetDateForFurikae(inputDate: string, taskData: (string | number | boolean)[], headers: string[], calendar: CalendarInfo, workbook: ExcelScript.Workbook): boolean`: 指定日が他の日付の振替先になっているかを判定します。振替規則を持つ業務について、非営業日から振り替えられて当日に実行される可能性があるかをチェックします。
 
 ### ユーティリティ関数
 
-- `prepareCalendarMap(workbook: ExcelScript.Workbook): CalendarInfo`: カレンダーデータを準備します。
-- `getScheduleSheet(workbook: ExcelScript.Workbook)`: 業務スケジュールシートを準備します。
-- `getExistingScheduleInfo(scheduleSheet: ExcelScript.Worksheet): { lastRowIndex: number, maxScheduleId: number }`: 既存のスケジュールデータの最終行と最大スケジュールIDを取得します。
-- `debugLog(workbook: ExcelScript.Workbook, message: string, level: "info" | "warning" | "error" = "info"): void`: デバッグログを記録します。
-- `create_debug_sheet(workbook: ExcelScript.Workbook, isClear = false)`: デバッグシートを作成します。
+- `prepareCalendarMap(workbook: ExcelScript.Workbook): CalendarInfo`: カレンダーシートからデータを読み込み、日付をキー、営業日フラグを値とするマップを作成します。
+- `prepareTaskNameMap(workbook: ExcelScript.Workbook): Map<string, string>`: 業務一覧シートから業務ID→業務名のマッピングを作成します。
+- `getScheduleSheet(workbook: ExcelScript.Workbook): ExcelScript.Worksheet`: 業務スケジュールシートを取得または新規作成します。既存データは保持されます。
+- `getExistingScheduleInfo(scheduleSheet: ExcelScript.Worksheet): { lastRowIndex: number, maxScheduleId: number }`: 既存のスケジュールデータの最終行と最大スケジュールIDを取得します。新規データの挿入位置と次のスケジュールIDの決定に使用されます。
+- `getLastDayOfMonth(year: number, month: number): number`: 指定月の末日を取得します。
+- `getNthDayOfWeekInMonth(year: number, month: number, dayOfWeek: number, occurance: number): number`: 指定月の第n曜日の日付を計算します。
+- `debugLog(workbook: ExcelScript.Workbook, message: string, level: "info" | "warning" | "error" = "info"): void`: デバッグログを記録します。デバッグシートに時刻、レベル、メッセージを出力します。
+- `create_debug_sheet(workbook: ExcelScript.Workbook, isClear = false): void`: デバッグシートを作成または初期化します。isClearがtrueの場合、既存のログをクリアします。
+- `execute(workbook: ExcelScript.Workbook, targetDate: string = "", businessIds: string = "", calendar: CalendarInfo): string`: メイン処理を実行します。指定日付の業務スケジュールを生成し、結果を返します。
 
 ### エラー処理
 
@@ -779,10 +785,10 @@ gantt
 
 ```mermaid
 sequenceDiagram
-    participant A as 直前営業日
-    participant B as 元の対象日（非営業日）
-    B->>A: 振替
-    Note over A: 業務実行
+    participant A as 元の対象日（非営業日）
+    participant B as 直前営業日
+    A->>B: 振替
+    Note over B: 業務実行
 ```
 
 #### 例：
@@ -805,7 +811,7 @@ sequenceDiagram
 
 ### 3. 振替しない
 
-対象日が非営業日でも振り替えを行わず、そのまま該当日に業務を設定します。
+対象日が非営業日でも振替を行わず、そのまま該当日に業務を設定します。
 
 ```mermaid
 sequenceDiagram
@@ -954,55 +960,87 @@ graph TD
 | 72 | 3月最終営業日業務 | | 定常 | 年次 | 営業日(月末逆算) | 3 | | | 0 | | 通常 | 2024/1/1 | | |
 | 78 | 3月第5金曜業務 | | 定常 | 年次 | 暦日(曜日) | 3 | 5 | 金 | | | 通常 | 2024/1/1 | | |
 
-## 結論
+## テスト機能
 
-この業務スケジュール管理システムのパターン設計は、以下の特徴を持っています：
+実装には包括的なテスト機能が組み込まれています：
 
-1. **柔軟性**: 様々なパラメータの組み合わせにより、あらゆるビジネスシーンに対応
-2. **網羅性**: 日次・週次・月次・年次の全ての周期をカバー
-3. **正確性**: 営業日・非営業日を適切に考慮した日付計算
-4. **対応力**: 非営業日の振替規則により、様々な業務ポリシーに対応
-5. **拡張性**: 必要に応じて新しいパラメータや規則を追加可能
+### 1. テストケースデータ
 
-これらの特徴により、当スケジュール管理システムは効率的かつ正確な業務計画立案をサポートします。
+scheduler.ostsファイル内には、以下のテストケースデータが定義されています：
 
----
-
-## 付録: 実際の使用例
-
-### ケース1: 経理部門の月次決算業務
-
-```
-業務名: 月次決算処理
-周期・頻度: 月次
-基準: 営業日(月末逆算)
-n日: 3
-非営業日振替規則: 直前営業日
+```typescript
+const testCaseData = [
+    ["2023_01_01_A", "元日業務チェック", "2023-01-01", "1", "対象", "毎日業務は休日も実行される"],
+    ["2023_01_01_B", "元日業務チェック", "2023-01-01", "9", "対象", "毎週日曜業務として実行"],
+    ["2023_01_01_C", "元日業務チェック", "2023-01-01", "56", "対象", "1月1日の年次業務として実行"]
+];
 ```
 
-この設定により、毎月最終営業日から3営業日前に月次決算処理が実行されます。
+### 2. テスト実行モード
 
-### ケース2: 四半期報告書の作成
+`main`関数の`isLocalTest`パラメータを`true`に設定することで、テストケースデータを使用した自動検証が実行されます：
 
-```
-業務名: 四半期報告書作成
-周期・頻度: 年次
-月: 3, 6, 9, 12
-基準: 暦日(n日指定)
-n日: 15
-非営業日振替規則: 直後営業日
-```
+- 各テストケースについて`execute`関数を呼び出し
+- 期待される結果と実際の結果を比較
+- テスト結果をデバッグログに出力
 
-この設定により、3月15日、6月15日、9月15日、12月15日に四半期報告書の作成業務が設定されます。これらの日が非営業日の場合は、直後の営業日に振り替えられます。
+### 3. 業務ID指定機能
 
-### ケース3: 週次進捗報告会
+`businessIds`パラメータを使用することで、特定の業務IDのみを対象とした処理が可能です：
 
-```
-業務名: 週次進捗報告会
-周期・頻度: 週次
-基準: 暦日(曜日)
-曜日: 金
-非営業日振替規則: 直前営業日
-```
+- カンマ区切りで複数の業務IDを指定可能
+- テスト時の特定業務の動作確認に有効
+- デバッグ時の問題切り分けに活用可能
 
-この設定により、毎週金曜日に進捗報告会が設定されます。金曜日が祝日などの非営業日の場合は、その前の営業日に振り替えられます。
+### 4. 参照データファイル
+
+システムは以下のCSVファイルを参照データとして使用します：
+
+- **カレンダー.csv**: 営業日・非営業日の定義（1098行のデータ）
+- **業務一覧.csv**: 業務定義データ（105業務の定義）
+- **テストケース.csv**: 基本テストケース（123ケース）
+- **テストケース2xx.csv**: 追加テストケース
+- **テストケース202301-04.csv**: 期間限定テストケース
+
+これらのファイルにより、実際のビジネス要件に基づいた包括的なテストが実現されています。
+
+## データ構造と整合性
+
+### CSVファイルのスキーマ
+
+#### 業務一覧.csv
+| 列名 | 説明 | 例 |
+|------|------|------|
+| 業務ID | 一意の業務識別子 | 1, 2, 3... |
+| 業務名 | 業務の名称 | "毎日業務", "毎月1日業務" |
+| 業務詳細 | 業務の詳細説明 | |
+| 業務種別 | 業務の種別 | "定常", "特別" |
+| 周期・頻度 | 実行頻度 | "日次", "週次", "月次", "年次" |
+| 基準 | 日付の基準 | "暦日", "営業日", "暦日(曜日)" |
+| 月 | 対象月（年次のみ） | 1-12 |
+| 週番号 | 第何週か | 1-5 |
+| 曜日 | 対象曜日 | "月", "火", "水", "木", "金", "土", "日" |
+| n日 | 日付指定 | 1-31, 0（末日） |
+| 非営業日振替規則 | 振替ルール | "直前営業日", "直後営業日", "振替しない" |
+| 優先度 | 処理優先度 | "通常", "高", "低" |
+| 有効開始日 | 業務の有効開始日 | 2023/01/01 |
+| 有効終了日 | 業務の有効終了日 | （空欄可） |
+| 備考 | 追加情報 | |
+
+#### カレンダー.csv
+| 列名 | 説明 | 例 |
+|------|------|------|
+| 日付 | 対象日付 | 2023-01-01 |
+| 営業日フラグ | 営業日かどうか | TRUE/FALSE |
+
+### データ整合性チェック
+
+実装では以下のデータ整合性チェックが行われています：
+
+1. **必須項目の存在確認**: 業務ID、業務名、周期・頻度などの必須項目
+2. **データ型の検証**: 数値項目の型チェックと範囲確認
+3. **有効期間の確認**: 有効開始日・終了日による業務の対象期間チェック
+4. **カレンダーデータの確認**: 指定日付のカレンダー情報の存在確認
+5. **エラー時の代替処理**: テーブル取得失敗時のシート直接読み込み
+
+これらの機能により、データの不整合による問題を最小限に抑え、安定した業務スケジュール生成を実現しています。

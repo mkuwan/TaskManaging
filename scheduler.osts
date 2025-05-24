@@ -681,24 +681,37 @@ function isWeeklyTask(inputDate: string, base: string, youbi: string, furikae: s
             debugLog(workbook, `週次業務: 日付${inputDate}は${nextDayStr}(${youbi})の直前営業日振替として対象`);
             return true;
         }
-    }
-
-    // 直後営業日の振替ルールがある場合
+    }    // 直後営業日の振替ルールがある場合
     if (furikae === "直後営業日" && dateInfo.isBusinessDay) {
-        // 対象曜日の日付を特定（当週の）
+        // 対象曜日の日付を特定（当週および前週の対象曜日を探す）
+        const targetDayOfWeekIndex = ["日", "月", "火", "水", "木", "金", "土"].indexOf(youbi);
+        
+        // 当週の対象曜日
         const weekStartDay = new Date(date);
         weekStartDay.setDate(weekStartDay.getDate() - weekStartDay.getDay()); // 日曜日に移動
-
-        const targetDayOfWeekIndex = ["日", "月", "火", "水", "木", "金", "土"].indexOf(youbi);
-        const targetDate = new Date(weekStartDay);
-        targetDate.setDate(targetDate.getDate() + targetDayOfWeekIndex);
-
-        // 対象曜日が非営業日かつ現在日が直後営業日か確認
-        const targetDateStr = formatDate(targetDate);
-        if (!isBusinessDay(targetDateStr, calendar)) {
-            const nextBusinessDayAfterTarget = getNextBusinessDay(targetDateStr, calendar, workbook);
+        const currentWeekTargetDate = new Date(weekStartDay);
+        currentWeekTargetDate.setDate(currentWeekTargetDate.getDate() + targetDayOfWeekIndex);
+        
+        // 前週の対象曜日
+        const prevWeekTargetDate = new Date(currentWeekTargetDate);
+        prevWeekTargetDate.setDate(prevWeekTargetDate.getDate() - 7);
+        
+        // 当週の対象曜日をチェック
+        const currentWeekTargetDateStr = formatDate(currentWeekTargetDate);
+        if (!isBusinessDay(currentWeekTargetDateStr, calendar)) {
+            const nextBusinessDayAfterTarget = getNextBusinessDay(currentWeekTargetDateStr, calendar, workbook);
             if (nextBusinessDayAfterTarget === inputDate) {
-                debugLog(workbook, `週次業務: 日付${inputDate}は${targetDateStr}(${youbi})の直後営業日振替として対象`);
+                debugLog(workbook, `週次業務: 日付${inputDate}は${currentWeekTargetDateStr}(${youbi})の直後営業日振替として対象`);
+                return true;
+            }
+        }
+        
+        // 前週の対象曜日をチェック
+        const prevWeekTargetDateStr = formatDate(prevWeekTargetDate);
+        if (!isBusinessDay(prevWeekTargetDateStr, calendar)) {
+            const nextBusinessDayAfterTarget = getNextBusinessDay(prevWeekTargetDateStr, calendar, workbook);
+            if (nextBusinessDayAfterTarget === inputDate) {
+                debugLog(workbook, `週次業務: 日付${inputDate}は${prevWeekTargetDateStr}(${youbi})の直後営業日振替として対象`);
                 return true;
             }
         }
