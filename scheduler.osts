@@ -6,8 +6,12 @@ const testCaseData = [
     // テストID,テスト内容,入力データ,テスト対象業務ID,期待結果,判定基準
     ["2023_01_01_A", "元日業務チェック", "2023-01-01", "1", "対象", "毎日業務は休日も実行される"],
     ["2023_01_01_B", "元日業務チェック", "2023-01-01", "9", "対象", "毎週日曜業務として実行"],
-    ["2023_01_01_C", "元日業務チェック", "2023-01-01", "56", "対象", "1月1日の年次業務として実行"]
+    ["2023_01_01_C", "元日業務チェック", "2023-01-01", "56", "対象", "1月1日の年次業務として実行"],
+    ["2023_04_01_A","土曜日業務チェック","2023-04-01","1","対象","毎日業務は土曜日も実行される"]
 ];
+
+
+let isOutputDebugLog: boolean = false;
 
 
 // 型定義
@@ -346,21 +350,25 @@ function applyFurikaeRule(inputDate: string, rule: string, calendar: CalendarInf
  * デバッグログを記録するシートを作成する
  */
 function create_debug_sheet(workbook: ExcelScript.Workbook, isClear = false) {
-    let debugSheet = workbook.getWorksheet("デバッグログ");
-    if (!debugSheet) {
-        debugSheet = workbook.addWorksheet("デバッグログ");
-        debugSheet.getRange("A1:C1").setValues([["タイムスタンプ", "レベル", "ログメッセージ"]]);
-    }
 
-    if (isClear) {
-        // 既存のデータをクリア
-        const existingRange = debugSheet.getUsedRange();
-        if (existingRange && existingRange.getRowCount() > 1) {
-            // ヘッダー行以外をクリア
-            const dataRange = debugSheet.getRange(`A2:C${existingRange.getRowCount()}`);
-            dataRange.clear();
+    if (isOutputDebugLog) {
+        let debugSheet = workbook.getWorksheet("デバッグログ");
+        if (!debugSheet) {
+            debugSheet = workbook.addWorksheet("デバッグログ");
+            debugSheet.getRange("A1:C1").setValues([["タイムスタンプ", "レベル", "ログメッセージ"]]);
+        }
+
+        if (isClear) {
+            // 既存のデータをクリア
+            const existingRange = debugSheet.getUsedRange();
+            if (existingRange && existingRange.getRowCount() > 1) {
+                // ヘッダー行以外をクリア
+                const dataRange = debugSheet.getRange(`A2:C${existingRange.getRowCount()}`);
+                dataRange.clear();
+            }
         }
     }
+
 }
 
 /**
@@ -370,16 +378,20 @@ function create_debug_sheet(workbook: ExcelScript.Workbook, isClear = false) {
  * @param level - ログレベル（"info", "warning", "error"のいずれか）
  */
 function debugLog(workbook: ExcelScript.Workbook, message: string, level: "info" | "warning" | "error" = "info"): void {
-    // デバッグシートを準備
-    let debugSheet = workbook.getWorksheet("デバッグログ");
-    if (!debugSheet) {
-        create_debug_sheet(workbook, false);
+
+    if (isOutputDebugLog) {
+        // デバッグシートを準備
+        let debugSheet = workbook.getWorksheet("デバッグログ");
+        if (!debugSheet) {
+            create_debug_sheet(workbook, false);
+        }
+
+        // 最終行を取得してログを追加
+        const lastRow = debugSheet.getUsedRange()?.getRowCount() || 1;
+        const timestamp = new Date().toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo' });
+        debugSheet.getRange(`A${lastRow + 1}:C${lastRow + 1}`).setValues([[timestamp, level, message]]);
     }
 
-    // 最終行を取得してログを追加
-    const lastRow = debugSheet.getUsedRange()?.getRowCount() || 1;
-    const timestamp = new Date().toLocaleTimeString();
-    debugSheet.getRange(`A${lastRow + 1}:C${lastRow + 1}`).setValues([[timestamp, level, message]]);
 }
 
 /**
@@ -1733,7 +1745,10 @@ function execute(workbook: ExcelScript.Workbook, targetDate: string = "", busine
  * @param businessIds - 業務IDのカンマ区切りリスト（テスト用）
  * @returns string - 抽出された業務IDのカンマ区切りリスト、またはエラーメッセージ
  */
-function main(workbook: ExcelScript.Workbook, targetDate: string = "", businessIds: string = "", isLocalTest: boolean = false): string {
+function main(workbook: ExcelScript.Workbook, targetDate: string = "", businessIds: string = "", isLocalTest: boolean = false, isDebug: boolean = false): string {
+    
+    isOutputDebugLog = isDebug;
+    
     create_debug_sheet(workbook, true);
 
     // カレンダー情報の準備
@@ -1747,6 +1762,8 @@ function main(workbook: ExcelScript.Workbook, targetDate: string = "", businessI
         }
 
     } else {
-        return execute(workbook, targetDate, businessIds, calendar);
+        const result = execute(workbook, targetDate, businessIds, calendar);
+        console.log(result);
+        return result;
     }
 }
