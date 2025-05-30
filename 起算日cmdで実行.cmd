@@ -55,10 +55,9 @@ for year_month, month_rows in months_data.items():
             row.append(str(business_day_count))
         else:
             row.append('')
-    
-    # 逆算営業日カウンター（月末から）
+      # 逆算営業日カウンター（月末から）
     reverse_business_days = {}
-    business_day_count = 0
+    business_day_count = 1  # 1起算に変更
     
     # 各日付に逆算営業日カウントを割り当て（月末から逆順に）
     for date_obj, row, is_business_day in sorted(month_rows, key=lambda x: x[0], reverse=True):

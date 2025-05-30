@@ -26,7 +26,7 @@ type CalendarInfo = { [date: string]: boolean };
 type BusinessDayInfo = {
     nth: number;      // 月内での営業日番号（1始まり）
     total: number;    // 月内の営業日総数
-    reverse: number;  // 月末から数えた営業日番号（最終営業日=1）
+    reverse: number;  // 月末から数えた営業日番号（最終営業日=0）
 };
 
 /**
@@ -88,10 +88,12 @@ function getBusinessDayInfo(inputDate: string, calendar: CalendarInfo): Business
         .sort(); // 日付順にソート
 
     // 入力日付が営業日リストの何番目かを探す
-    const index = businessDays.indexOf(inputDate);    // 月内営業日番号と月末からの逆算番号を計算
+    const index = businessDays.indexOf(inputDate);
+
+    // 月内営業日番号と月末からの逆算番号を計算
     const nth = index !== -1 ? index + 1 : 0; // 0から始まるインデックスを1から始まる番号に変換、見つからない場合は0
     const total = businessDays.length;
-    const reverse = nth > 0 ? total - nth + 1 : -1; // 最終営業日=1になるように逆算、見つからない場合は-1
+    const reverse = nth > 0 ? total - nth : -1; // 最終営業日=0になるように逆算、見つからない場合は-1
 
     return { nth, total, reverse };
 }
@@ -272,7 +274,7 @@ function getNthBusinessDayOfMonth(year: number, month: number, n: number, calend
  * 指定月の末日からn営業日前の日付を取得する関数
  * @param year - 年
  * @param month - 月（1-12）
- * @param n - 月末から何営業日前か（1=最終営業日）
+ * @param n - 月末から何営業日前か（0=最終営業日）
  * @param calendar - カレンダー情報
  * @param workbook - ExcelScript.Workbook
  * @returns string - 月末からn営業日前の日付（YYYY-MM-DD形式）
@@ -284,14 +286,16 @@ function getReverseNthBusinessDayOfMonth(year: number, month: number, n: number,
 
         // 月の初日と末日
         const firstDay = new Date(year, month - 1, 1);
-        const lastDay = new Date(year, month, 0);        let businessDayCount = 1;  // 1ベースのカウンタ
+        const lastDay = new Date(year, month, 0);
+
+        let businessDayCount = 0;
         const currentDate = new Date(lastDay);
 
         // 月内を逆順に検索
         while (currentDate >= firstDay) {
             const dateStr = formatDate(currentDate);
 
-            // 営業日であれば判定
+            // 営業日であれば加算
             if (calendar[dateStr] === true) {
                 // 目的のn営業日に到達したら
                 if (businessDayCount === n) {
@@ -779,7 +783,7 @@ function isCalendarDayNthTask(inputDate: string, n: number, furikae: string, cal
 /**
  * 月次/年次業務の暦日(月末逆算)判定関数
  * @param inputDate - 対象日付（YYYY-MM-DD形式）
- * @param n - 月末からn日前（1起算：1=末日、2=1日前）
+ * @param n - 月末からn日前（0=末日）
  * @param furikae - 振替規則
  * @param calendar - カレンダー情報
  * @param workbook - ExcelScript.Workbook
@@ -793,8 +797,8 @@ function isCalendarDayEndOfMonthTask(inputDate: string, n: number, furikae: stri
     // 月末日
     const lastDay = getLastDayOfMonth(dateInfo.year, dateInfo.month);
 
-    // 月末からn日前（1起算：n=1が末日、n=2が1日前）
-    const targetDay = lastDay - (n - 1);
+    // 月末からn日前
+    const targetDay = n === 0 ? lastDay : lastDay - n;
 
     // 指定日と一致
     if (dateInfo.day === targetDay) {
@@ -855,7 +859,7 @@ function isBusinessDayNthTask(inputDate: string, n: number, calendar: CalendarIn
 /**
  * 月次/年次業務の営業日(月末逆算)判定関数
  * @param inputDate - 対象日付（YYYY-MM-DD形式）
- * @param n - 月末から何営業日前か（1=最終営業日）
+ * @param n - 月末から何営業日前か（0=最終営業日）
  * @param calendar - カレンダー情報
  * @param workbook - ExcelScript.Workbook
  * @returns boolean - 実行対象の場合true
@@ -1047,8 +1051,10 @@ function isTargetTask(
                 const result = isCalendarDayNthTask(inputDate, nDay, furikae, calendar, workbook);
                 debugLog(workbook, `業務ID=${id}: 月次・暦日(n日指定)判定結果=${result}`);
                 return result;
-            }            // 2. 暦日(月末逆算)
-            if (base === "暦日(月末逆算)" && nDay !== null && nDay > 0) {
+            }
+
+            // 2. 暦日(月末逆算)
+            if (base === "暦日(月末逆算)" && (nDay !== null || nDay === 0)) {
                 const result = isCalendarDayEndOfMonthTask(inputDate, nDay, furikae, calendar, workbook);
                 debugLog(workbook, `業務ID=${id}: 月次・暦日(月末逆算)判定結果=${result}`);
                 return result;
@@ -1059,8 +1065,10 @@ function isTargetTask(
                 const result = isBusinessDayNthTask(inputDate, nDay, calendar, workbook);
                 debugLog(workbook, `業務ID=${id}: 月次・営業日(n日指定)判定結果=${result}`);
                 return result;
-            }            // 4. 営業日(月末逆算)
-            if (base === "営業日(月末逆算)" && nDay !== null && nDay > 0) {
+            }
+
+            // 4. 営業日(月末逆算)
+            if (base === "営業日(月末逆算)" && (nDay !== null || nDay === 0)) {
                 const result = isBusinessDayEndOfMonthTask(inputDate, nDay, calendar, workbook);
                 debugLog(workbook, `業務ID=${id}: 月次・営業日(月末逆算)判定結果=${result}`);
                 return result;
@@ -1083,8 +1091,10 @@ function isTargetTask(
                 const result = isCalendarDayNthTask(inputDate, nDay, furikae, calendar, workbook);
                 debugLog(workbook, `業務ID=${id}: 年次・暦日(n日指定)判定結果=${result}`);
                 return result;
-            }            // 2. 暦日(月末逆算)
-            if (base === "暦日(月末逆算)" && nDay !== null && nDay > 0) {
+            }
+
+            // 2. 暦日(月末逆算)
+            if (base === "暦日(月末逆算)" && (nDay !== null || nDay === 0)) {
                 const result = isCalendarDayEndOfMonthTask(inputDate, nDay, furikae, calendar, workbook);
                 debugLog(workbook, `業務ID=${id}: 年次・暦日(月末逆算)判定結果=${result}`);
                 return result;
@@ -1095,8 +1105,10 @@ function isTargetTask(
                 const result = isBusinessDayNthTask(inputDate, nDay, calendar, workbook);
                 debugLog(workbook, `業務ID=${id}: 年次・営業日(n日指定)判定結果=${result}`);
                 return result;
-            }            // 4. 営業日(月末逆算)
-            if (base === "営業日(月末逆算)" && nDay !== null && nDay > 0) {
+            }
+
+            // 4. 営業日(月末逆算)
+            if (base === "営業日(月末逆算)" && (nDay !== null || nDay === 0)) {
                 const result = isBusinessDayEndOfMonthTask(inputDate, nDay, calendar, workbook);
                 debugLog(workbook, `業務ID=${id}: 年次・営業日(月末逆算)判定結果=${result}`);
                 return result;
@@ -1251,10 +1263,12 @@ function isMatchingOriginalCondition(
         // 1. 暦日(n日指定)
         if ((base === "暦日(n日指定)" || base === "暦日(〇日指定)" || base === "暦日(○日指定)") && nDay !== null) {
             return dateInfo.day === nDay;
-        }        // 2. 暦日(月末逆算)
-        if (base === "暦日(月末逆算)" && nDay !== null && nDay > 0) {
+        }
+
+        // 2. 暦日(月末逆算)
+        if (base === "暦日(月末逆算)" && (nDay !== null || nDay === 0)) {
             const lastDay = getLastDayOfMonth(dateInfo.year, dateInfo.month);
-            const targetDay = lastDay - (nDay - 1);
+            const targetDay = nDay === 0 ? lastDay : lastDay - nDay;
             return dateInfo.day === targetDay;
         }
 
@@ -1266,8 +1280,10 @@ function isMatchingOriginalCondition(
             // 営業日情報を取得
             const businessDayInfo = getBusinessDayInfo(dateStr, calendar);
             return businessDayInfo.nth === nDay;
-        }        // 4. 営業日(月末逆算)
-        if (base === "営業日(月末逆算)" && nDay !== null && nDay > 0) {
+        }
+
+        // 4. 営業日(月末逆算)
+        if (base === "営業日(月末逆算)" && (nDay !== null || nDay === 0)) {
             // 非営業日は対象外
             if (!isBusinessDay(dateStr, calendar)) return false;
 
